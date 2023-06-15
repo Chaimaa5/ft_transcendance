@@ -12,14 +12,25 @@ export class AuthController {
     @UseGuards(AuthGuard('42'))
     handleLogin(){}
 
+ 
     @Get('/redirect')
     @UseGuards(AuthGuard('42'))
     async handleRedirect(@Req() req: Request, @Res() res: Response){
-        const UserExists = await this.authservice.findUser(req.user);
-        const Token = this.authservice.generateToken(req.user);
-        res.set('authorization', Token);
-        res.json(req.user);
-        return {messgae: 'success'};
+        await this.authservice.signIn(res, req);
+    }
+
+    @Get('/refresh')
+    @UseGuards(AuthGuard('jwt'))
+    async RefreshToken(@Req() req: Request, @Res() res: Response){
+        await this.authservice.RefreshTokens(req, res);
+        
+        const message = 'Hello!';
+        res.send(message);
+    }
+    
+    @Get('/logout')
+    async handleLogout(@Req() req: Request, @Res() res: Response){
+        this.authservice.signOut(res);
     }
 
 }

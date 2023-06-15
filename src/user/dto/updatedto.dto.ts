@@ -1,5 +1,12 @@
 export class UpdateUserDTO{
-    username?: string;
-    email?: string;
-    avatar?: string;
+  id        :number                 
+  username  :String
+  fullname  :String
+  avatar    :String
+  TFA       :Boolean
+  TFASecret :String
+  XP        :number
+  win       :number
+  loss      :number
+  draw      :number
 }
