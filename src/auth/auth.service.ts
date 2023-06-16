@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, User } from '@prisma/client';
 import { JwtPayload, VerifyOptions } from 'jsonwebtoken';
 import { Request, Response } from 'express';
 import * as crypto from 'crypto';
@@ -13,13 +13,12 @@ export class AuthService {
     
     constructor(private readonly jwtService: JwtService, private readonly userService: UserService,
         private configService: ConfigService ){}
-    secretKey = 'process.env.JWT_REFRESH_SECRET';
+    secretKey = 'secret';
     async CreateUser(user: any)
     {
         const prisma = new PrismaClient();
-        
         const UserExists = await prisma.user.findUnique({
-            where:{id: parseInt(user.id, 10),},
+            where:{id: user.id},
         });
         if(UserExists){
             console.log('User already exists');
@@ -28,7 +27,7 @@ export class AuthService {
         else{
               const newUser = await prisma.user.create({
                 data:{
-                    id: parseInt(user.id, 10),
+                    id: user.id,
                     username: user.username,
                     fullname: user.fullname,
                     avatar: user.avatar,        // Add the required properties
@@ -39,6 +38,7 @@ export class AuthService {
                     loss: 0,
                     draw: 0,
                     badge: '',
+                    refreshToken: '',
                     createdAt: new Date(),
                 }
             });
@@ -84,7 +84,7 @@ export class AuthService {
         res.cookie('access_token', Access_Token, {httpOnly: true, secure: true,});
         res.cookie('refresh_token', Refresh_Token, {httpOnly: true, secure: true,});
         const encryptedToken = this.encryptToken(Refresh_Token);
-        this.userService.UpdateRefreshToken(parseInt(check.id, 10) , encryptedToken)
+        this.userService.UpdateRefreshToken(check.id, encryptedToken)
         res.redirect('http://localhost:5173/home');
     }
 
@@ -95,21 +95,25 @@ export class AuthService {
     } 
 
     async RefreshTokens(req: Request, res: Response) {
-        const user = await this.findUser(req.user);
+        const users: any = req.user;
+    
+        const user = await this.findUser(users.user);
         if (!user)
             throw new ForbiddenException('Access Denied');
         const decryptedToken = this.decryptToken(user.refreshToken);
         const decodedToken = this.jwtService.verify(decryptedToken) ;
         const cookieToken = this.jwtService.verify(req.cookies['refresh_token']);
-        if (decodedToken != cookieToken)
-            throw new ForbiddenException('Access Denied');
-        else{
-            const Access_Token = this.generateToken(req.user);
-            const Refresh_Token = this.generateRefreshToken(req.user);
+        if (decryptedToken == req.cookies['refresh_token'])
+        {
+            const Access_Token = this.generateToken(user);
+            const Refresh_Token = this.generateRefreshToken(user);
             res.cookie('access_token', Access_Token, {httpOnly: true, secure: true,});
             res.cookie('refresh_token', Refresh_Token, {httpOnly: true, secure: true,});
             const encryptedToken = this.encryptToken(Refresh_Token);
-            this.userService.UpdateRefreshToken(parseInt(user.id, 10) , encryptedToken)
+            this.userService.UpdateRefreshToken(user.id , encryptedToken)
+        }
+        else{
+            throw new ForbiddenException('Access Denied');
         }
     }
 }

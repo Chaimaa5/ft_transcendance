@@ -1,6 +1,6 @@
 -- CreateTable
 CREATE TABLE "User" (
-    "id" INTEGER NOT NULL,
+    "id" TEXT NOT NULL,
     "username" TEXT NOT NULL,
     "fullname" TEXT NOT NULL,
     "avatar" TEXT NOT NULL,
@@ -10,6 +10,7 @@ CREATE TABLE "User" (
     "win" INTEGER NOT NULL,
     "loss" INTEGER NOT NULL,
     "draw" INTEGER NOT NULL,
+    "refreshToken" TEXT,
     "badge" TEXT[],
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -19,8 +20,8 @@ CREATE TABLE "User" (
 -- CreateTable
 CREATE TABLE "Friendship" (
     "id" SERIAL NOT NULL,
-    "senderId" INTEGER NOT NULL,
-    "receiverId" INTEGER NOT NULL,
+    "senderId" TEXT NOT NULL,
+    "receiverId" TEXT NOT NULL,
     "status" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -31,7 +32,7 @@ CREATE TABLE "Friendship" (
 CREATE TABLE "GroupMembership" (
     "id" SERIAL NOT NULL,
     "roomId" INTEGER NOT NULL,
-    "userId" INTEGER NOT NULL,
+    "userId" TEXT NOT NULL,
     "role" TEXT NOT NULL,
     "isBanned" BOOLEAN NOT NULL,
     "isMuted" BOOLEAN NOT NULL,
@@ -57,7 +58,7 @@ CREATE TABLE "Room" (
 CREATE TABLE "Message" (
     "id" SERIAL NOT NULL,
     "roomId" INTEGER NOT NULL,
-    "userId" INTEGER NOT NULL,
+    "userId" TEXT NOT NULL,
     "content" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -67,8 +68,8 @@ CREATE TABLE "Message" (
 -- CreateTable
 CREATE TABLE "Game" (
     "id" SERIAL NOT NULL,
-    "playerId1" INTEGER NOT NULL,
-    "playerId2" INTEGER NOT NULL,
+    "playerId1" TEXT NOT NULL,
+    "playerId2" TEXT NOT NULL,
     "playerXp1" INTEGER NOT NULL,
     "playerXp2" INTEGER NOT NULL,
     "mode" TEXT NOT NULL,

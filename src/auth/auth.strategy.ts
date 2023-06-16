@@ -16,7 +16,7 @@ export class FortyTwoStrategy extends PassportStrategy(Strategy, '42') {
   async validate(accessToken: string, refreshToken: string, profile: any){
     const prisma = new PrismaClient();
     const user =  {
-      id: parseInt(profile.id, 10),
+      id: profile.id,
       username: profile.username,
       fullname: profile._json.usual_full_name,
       avatar: profile._json.image.link, 

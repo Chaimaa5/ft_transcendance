@@ -1,7 +1,6 @@
 import { Controller, Get,  UseGuards,  Res, Req} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
-// import { Request, Response } from 'express';
 import { Request, Response } from 'express';
 
 
@@ -23,9 +22,6 @@ export class AuthController {
     @UseGuards(AuthGuard('jwt'))
     async RefreshToken(@Req() req: Request, @Res() res: Response){
         await this.authservice.RefreshTokens(req, res);
-        
-        const message = 'Hello!';
-        res.send(message);
     }
     
     @Get('/logout')

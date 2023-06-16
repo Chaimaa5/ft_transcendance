@@ -7,27 +7,27 @@ export class UserService {
     constructor(){}
 
 
-    UpdateUser(id: number, UserData: UpdateUserDTO) {
+    UpdateUser(id: string, UserData: UpdateUserDTO) {
         const prisma = new PrismaClient();
         return prisma.user.update({where: {id: id}, data: UserData as any});
     }
 
-    async UpdateRefreshToken(id: number, Rt: string) {
+    async UpdateRefreshToken(id: string, Rt: string) {
         const prisma = new PrismaClient();
         return prisma.user.update({where: {id: id}, data: {refreshToken : Rt}});
     }
 
-    GetMany(id: number, UserData: UpdateUserDTO) {
+    GetMany(id: string, UserData: UpdateUserDTO) {
         const prisma = new PrismaClient();
         return prisma.user.findMany();
     }
-    DeleteUser(id: number) {
+    DeleteUser(id: string) {
         const prisma = new PrismaClient();
-        return prisma.user.delete({where: {id}});
+        return prisma.user.delete({where: {id: id}});
     }
-    async FindbyID(id: number) {
+    async FindbyID(id: string) {
         const prisma = new PrismaClient();
-        return prisma.user.findUnique({where:  {id}});
+        return prisma.user.findUnique({where:  {id: id}});
     }
 
 }
