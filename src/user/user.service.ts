@@ -5,6 +5,16 @@ import { CreateFriendshipDTO } from './dto/createFriendship.dto';
 
 @Injectable()
 export class UserService {
+    updateOnlineStatus(id: string, status: boolean) {
+        throw new Error('Method not implemented.');
+    }
+    getUser() {
+        throw new Error('Method not implemented.');
+    }
+    bestRanked() {
+        throw new Error('Method not implemented.');
+    }
+
     prisma = new PrismaClient();
     constructor(){}
     
@@ -15,6 +25,8 @@ export class UserService {
     
     async UpdateRefreshToken(id: string, Rt: string) {
         const prisma = new PrismaClient();
+        console.log('updating refresh to ');
+        console.log(Rt);
         return prisma.user.update({where: {id: id}, data: {refreshToken : Rt}});
     }
     
@@ -32,45 +44,43 @@ export class UserService {
     }
     FindbyName(username: string) {
         const prisma = new PrismaClient();
+        console.log(username);
         return prisma.user.findFirst({where: {username: username}});
     }
 
-    //addFriend
-    //status: pending
-    //        accepted
-    //        blocked
-    //        removed
+    //Friendship
+
               
-    async addFriend(dto :CreateFriendshipDTO){
-        const {senderId, receiverId} = dto;
+    async addFriend(id : string, dto :CreateFriendshipDTO){
+        const {receiverId} = dto;
         await this.prisma.friendship.create({
             data: {
-                sender: {connect: {id: senderId}},
+                sender: {connect: {id: id}},
                 receiver: {connect: {id: receiverId}},
                 status: 'pending',
             },
         });
     }
 
-    async removeFriend(dto :CreateFriendshipDTO){
-        const {senderId, receiverId} = dto;
+    async removeFriend(id : string, dto :CreateFriendshipDTO){
+        const {receiverId} = dto;
         await this.prisma.friendship.deleteMany({
             where: {
                 OR: [
-                    {senderId: senderId, receiverId: receiverId},
-                    {senderId: receiverId, receiverId: senderId},
+                    {senderId: id, receiverId: receiverId},
+                    {senderId: receiverId, receiverId: id},
                 ],
             },
         });
     }
 
-    async acceptFriend(dto :CreateFriendshipDTO){
-        const {senderId, receiverId} = dto;
+    async acceptFriend(id : string, dto :CreateFriendshipDTO){
+        const {receiverId} = dto;
         await this.prisma.friendship.updateMany({
             where: {
                 OR: [
-                    {senderId: senderId, receiverId: receiverId},
-                    {senderId: receiverId, receiverId: senderId},
+                    {senderId: id, receiverId: receiverId},
+                    {senderId: receiverId, receiverId: id},
                 ],
             },
             data: {
@@ -79,14 +89,15 @@ export class UserService {
         });
     }
 
-    async blockFriend(dto :CreateFriendshipDTO){
-        const {senderId, receiverId} = dto;
+    async blockFriend(id : string, dto :CreateFriendshipDTO){
+        const {receiverId} = dto;
         await this.prisma.friendship.updateMany({
             where: {
                 OR: [
-                    {senderId: senderId, receiverId: receiverId},
-                    {senderId: receiverId, receiverId: senderId},
+                    {senderId: id, receiverId: receiverId},
+                    {senderId: receiverId, receiverId: id},
                 ],
+
             },
             data: {
                 status: 'blocked',
@@ -95,22 +106,69 @@ export class UserService {
     }
 
     //should be updated
-    async getFriends(dto :CreateFriendshipDTO){
-        const {senderId} = dto;
-        await this.prisma.friendship.findMany({where: {
-            OR: [
-                {senderId: senderId},
-                {receiverId: senderId},
+    async getFriends(id : string){
+        const res = await this.prisma.friendship.findMany({where: {
+            AND:[{
+                OR: [
+                    {senderId: id},
+                    {receiverId: id},
+                ],
+            },
+            {status: 'accepted'},
             ],
+            
         },});
+        return res;
     }
 
     //should be updated
-    async getFriend(dto :CreateFriendshipDTO){
-        const {senderId} = dto;
-        await this.prisma.friendship.findFirst({where: {
-                receiverId: senderId }
+    async getFriend(id : string, dto :CreateFriendshipDTO){
+        const {receiverId} = dto;
+        const res = await this.prisma.friendship.findFirst({ where: {
+            AND:[{
+                OR: [
+                    {senderId: id, receiverId: receiverId},
+                    {senderId: receiverId, receiverId: id},
+                ],
+            },
+            {status: 'accepted'},
+            ],
+        },
         });
+        return res;
     }
 
+    async getPendings(id : string){
+        const res = await this.prisma.friendship.findMany({where: {
+            AND:[{
+                OR: [
+                    {senderId: id},
+                    {receiverId: id},
+                ],
+            },
+            {status: 'pending'},
+            ],
+            
+        },});
+        return res;
+    }
+
+    async getBlocked(id : string){
+        const res = await this.prisma.friendship.findMany({where: {
+            AND:[{
+                OR: [
+                    {senderId: id},
+                    {receiverId: id},
+                ],
+            },
+            {status: 'blocked'},
+            ],
+            
+        },});
+        return res;
+    }
+
+    // async firstUpdate(data: Body) {
+    //     return this.prisma.user.update({where: {id: id}, data: data as any});
+    // }
 }

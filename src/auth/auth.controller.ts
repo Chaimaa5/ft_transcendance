@@ -1,4 +1,4 @@
-import { Controller, Get,  UseGuards,  Res, Req} from '@nestjs/common';
+import { Controller, Get,  UseGuards,  Res, Req, Headers} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { Request, Response } from 'express';
@@ -14,19 +14,31 @@ export class AuthController {
  
     @Get('/redirect')
     @UseGuards(AuthGuard('42'))
-    async handleRedirect(@Req() req: Request, @Res() res: Response){
-        await this.authservice.signIn(res, req);
+    async handleAuth(@Req() req: Request, @Res() res: Response){
+       await this.authservice.signIn(res, req);
+       return res.send('created succe');
     }
 
     @Get('/refresh')
     @UseGuards(AuthGuard('jwt'))
     async RefreshToken(@Req() req: Request, @Res() res: Response){
+        res.clearCookie('access_token');
+        res.clearCookie('refresh_token');
         await this.authservice.RefreshTokens(req, res);
+        return res.send('refreshed');
+
     }
     
     @Get('/logout')
     async handleLogout(@Req() req: Request, @Res() res: Response){
         this.authservice.signOut(res);
+    }
+
+    @Get('/enable')
+    async handletfa(@Req() req: Request, @Res() res: Response){
+        const qr= await this.authservice.generateQRCode(req.originalUrl);
+        console.log(qr);
+        return qr;
     }
 
 }

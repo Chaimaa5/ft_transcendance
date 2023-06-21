@@ -6,7 +6,7 @@ import { Request, Response } from 'express';
 import * as crypto from 'crypto';
 import { UserService } from 'src/user/user.service';
 import { ConfigService } from 'src/config/config.service';
-
+import { toDataURL } from 'qrcode';
 
 @Injectable()
 export class AuthService {
@@ -31,8 +31,8 @@ export class AuthService {
                     username: user.username,
                     fullname: user.fullname,
                     avatar: user.avatar,        // Add the required properties
-                    TFA: false,
-                    TFASecret: '',
+                    isTwoFacEnabled: false,
+                    TwoFacSecret: '',
                     XP: 0,
                     win: 0,
                     loss: 0,
@@ -67,12 +67,12 @@ export class AuthService {
     }
 
     generateToken(user: any) : string {
-        const payload: JwtPayload = {id: user.id,  username: user.username }; 
+        const payload: JwtPayload = {id: user.id,  username: user.username, isTwoFacEnabled: user.isTwoFacEnabled }; 
         return this.jwtService.sign(payload);
     }
 
     generateRefreshToken(user: any) : string  {
-        const payload: JwtPayload = {id: user.id,  username: user.username }; 
+        const payload: JwtPayload = {id: user.id,  username: user.username, isTwoFacEnabled: user.isTwoFacEnabled}; 
         return this.jwtService.sign(payload, {expiresIn: '30d'});
     }
 
@@ -85,37 +85,47 @@ export class AuthService {
         res.cookie('refresh_token', Refresh_Token, {httpOnly: true, secure: true,});
         const encryptedToken = this.encryptToken(Refresh_Token);
         this.userService.UpdateRefreshToken(check.id, encryptedToken)
-        res.redirect('http://localhost:5173/home');
+        return(res);
     }
 
     signOut(res: Response) {
         res.clearCookie('access_token');
         res.clearCookie('refresh_token');
-        res.redirect('http://localhost:5173/login');
+        res.redirect('http://10.12.2.12:5173/login');
     } 
 
     async RefreshTokens(req: Request, res: Response) {
+
+        console.log(req);
         const users: any = req.user;
-    
         const user = await this.findUser(users.user);
         if (!user)
-            throw new ForbiddenException('Access Denied');
+            throw new ForbiddenException('User Does not exist');
         const decryptedToken = this.decryptToken(user.refreshToken);
         const decodedToken = this.jwtService.verify(decryptedToken) ;
         const cookieToken = this.jwtService.verify(req.cookies['refresh_token']);
+
         if (decryptedToken == req.cookies['refresh_token'])
         {
             const Access_Token = this.generateToken(user);
             const Refresh_Token = this.generateRefreshToken(user);
+
             res.cookie('access_token', Access_Token, {httpOnly: true, secure: true,});
             res.cookie('refresh_token', Refresh_Token, {httpOnly: true, secure: true,});
+
             const encryptedToken = this.encryptToken(Refresh_Token);
             this.userService.UpdateRefreshToken(user.id , encryptedToken)
+            console.log('finiished');
         }
         else{
             throw new ForbiddenException('Access Denied');
         }
     }
-}
 
+    //TwoFactorAuth
+    
+    async generateQRCode(authUrl: string){
+        return await toDataURL(authUrl);
+    }
+}
 

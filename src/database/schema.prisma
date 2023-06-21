@@ -12,12 +12,14 @@ model User {
   username      String
   fullname      String
   avatar        String
-  TFA           Boolean
-  TFASecret     String
+  isTwoFacEnabled  Boolean
+  TwoFacSecret     String
   XP            Int
+  level         Float?
+  topaz         Int?
   win           Int
   loss          Int
-  draw          Int
+  games         Int? 
   refreshToken  String?
   badge         String[]
   createdAt     DateTime             @default(now())
@@ -63,13 +65,13 @@ model  Room {
   createdAt   DateTime                @default(now())
   updateAt    DateTime                @default(now())
 
-  message     Message[]                @relation("MessagsToRoom")
+  message     Message[]                @relation("MessagesToRoom")
   membership  GroupMembership[]        @relation("GroupToRoom")
 }
 
 model  Message {
   id         Int                      @default(autoincrement()) @id
-  room       Room                     @relation("MessagsToRoom", fields: [roomId], references: [id])
+  room       Room                     @relation("MessagesToRoom", fields: [roomId], references: [id])
   roomId     Int        
   user       User                     @relation("MessageToUser", fields: [userId], references: [id])
   userId     String         
@@ -86,6 +88,6 @@ model  Game {
   playerXp1  Int
   playerXp2  Int
   mode       String
-  isDraw     Boolean
+  // isDraw     Boolean
   rounds     Int
 }
