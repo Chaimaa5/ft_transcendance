@@ -36,7 +36,7 @@ export class AuthService {
                     XP: 0,
                     win: 0,
                     loss: 0,
-                    draw: 0,
+                    status: false,
                     badge: '',
                     refreshToken: '',
                     createdAt: new Date(),

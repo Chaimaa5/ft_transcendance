@@ -15,6 +15,7 @@ export class AuthController {
     @Get('/redirect')
     @UseGuards(AuthGuard('42'))
     async handleAuth(@Req() req: Request, @Res() res: Response){
+        // console.log(req.user);
        await this.authservice.signIn(res, req);
        return res.send('created succe');
     }

@@ -4,13 +4,16 @@ CREATE TABLE "User" (
     "username" TEXT NOT NULL,
     "fullname" TEXT NOT NULL,
     "avatar" TEXT NOT NULL,
-    "TFA" BOOLEAN NOT NULL,
-    "TFASecret" TEXT NOT NULL,
+    "isTwoFacEnabled" BOOLEAN NOT NULL,
+    "TwoFacSecret" TEXT NOT NULL,
     "XP" INTEGER NOT NULL,
+    "level" DOUBLE PRECISION,
+    "topaz" INTEGER,
     "win" INTEGER NOT NULL,
     "loss" INTEGER NOT NULL,
-    "draw" INTEGER NOT NULL,
+    "games" INTEGER,
     "refreshToken" TEXT,
+    "status" BOOLEAN NOT NULL,
     "badge" TEXT[],
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -73,7 +76,6 @@ CREATE TABLE "Game" (
     "playerXp1" INTEGER NOT NULL,
     "playerXp2" INTEGER NOT NULL,
     "mode" TEXT NOT NULL,
-    "isDraw" BOOLEAN NOT NULL,
     "rounds" INTEGER NOT NULL,
 
     CONSTRAINT "Game_pkey" PRIMARY KEY ("id")

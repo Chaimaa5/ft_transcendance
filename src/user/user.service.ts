@@ -5,6 +5,7 @@ import { CreateFriendshipDTO } from './dto/createFriendship.dto';
 
 @Injectable()
 export class UserService {
+
     updateOnlineStatus(id: string, status: boolean) {
         throw new Error('Method not implemented.');
     }
@@ -25,8 +26,6 @@ export class UserService {
     
     async UpdateRefreshToken(id: string, Rt: string) {
         const prisma = new PrismaClient();
-        console.log('updating refresh to ');
-        console.log(Rt);
         return prisma.user.update({where: {id: id}, data: {refreshToken : Rt}});
     }
     
@@ -40,13 +39,21 @@ export class UserService {
     }
     async FindbyID(id: string) {
         const prisma = new PrismaClient();
-        return prisma.user.findUnique({where:  {id: id}});
+        return prisma.user.findUnique({where:  {id: id},
+            select: {
+                username: true,
+                avatar: true,
+                XP: true,
+                level: true,
+                topaz: true,
+            }
+        });
     }
-    FindbyName(username: string) {
-        const prisma = new PrismaClient();
-        console.log(username);
-        return prisma.user.findFirst({where: {username: username}});
-    }
+    // FindbyName(username: string) {
+    //     const prisma = new PrismaClient();
+    //     console.log(username);
+    //     return prisma.user.findFirst({where: {username: username}});
+    // }
 
     //Friendship
 
@@ -149,7 +156,9 @@ export class UserService {
             {status: 'pending'},
             ],
             
-        },});
+        },
+        
+    });
         return res;
     }
 

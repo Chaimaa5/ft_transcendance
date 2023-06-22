@@ -21,6 +21,7 @@ model User {
   loss          Int
   games         Int? 
   refreshToken  String?
+  status        Boolean
   badge         String[]
   createdAt     DateTime             @default(now())
   sentFriendships   Friendship[]     @relation("SenderUser")
@@ -88,6 +89,5 @@ model  Game {
   playerXp1  Int
   playerXp2  Int
   mode       String
-  // isDraw     Boolean
   rounds     Int
 }

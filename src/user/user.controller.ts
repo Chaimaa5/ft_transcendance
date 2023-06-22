@@ -5,77 +5,87 @@ import { CreateFriendshipDTO } from './dto/createFriendship.dto';
 import { Request } from 'express';
 // import { SocketGateway } from 'src/socket/socket.gateway';
 import { AuthGuard } from '@nestjs/passport';
-UseGuards(AuthGuard('jwt'))
+import { User } from '@prisma/client';
 @Controller('user')
+@UseGuards(AuthGuard('jwt'))
 export class UserController{
     constructor(private readonly userservice: UserService
-       ){}
-
-
-    //User Management
+        ){}
+        
+        
+        //User Management
+        // @Get()
+        // async FindMany() {
+            //     return this.userservice.GetMany();
+            // }
+            
+            //working
     @Get()
-    async FindMany() {
-        return this.userservice.GetMany();
+    async FindbyID(@Req() req: Request){
+        const user : User = req.user as User;
+        return  await this.userservice.FindbyID(user.id);
     }
 
     //working
-    // @Get()
-    // async FindbyID(@Req() req: Request){
-    //     return  this.userservice.FindbyID(req.user['id']);
-    // }
-
-    //working
-    @Delete(':id')
-    async DeleteUser(@Param('id') id: string){
-        return this.userservice.DeleteUser(id);
+    @Delete()
+    async DeleteUser(@Req() req: Request){
+        const user : User = req.user as User;
+        return this.userservice.DeleteUser(user.id);
     }
 
     //working
-    @Post(':id')
-    async UpdateUser(@Param('id') id: string, @Body() UserData: UpdateUserDTO){
-        console.log(UserData);
-        return this.userservice.UpdateUser(id, UserData);
+    @Post('')
+    async UpdateUser(@Req() req: Request, @Body() UserData: UpdateUserDTO){
+        const user : User = req.user as User;
+        return this.userservice.UpdateUser(user.id, UserData);
     }
 
     //Friendship Management
     //working
-    @Post(':id/add')
-    async addFriend(@Param('id') id: string, @Body() dto: CreateFriendshipDTO){
-         this.userservice.addFriend(id, dto);
+    @Post('/add')
+    async addFriend(@Req() req: Request, @Body() dto: CreateFriendshipDTO){
+        const user : User = req.user as User;
+         this.userservice.addFriend(user.id, dto);
          return {message: 'friend added'};
     }
-    @Post(':id/remove')
-    async removeFriend(@Param('id') id: string, @Body() dto: CreateFriendshipDTO){
-        this.userservice.removeFriend(id, dto);
+    @Post('/remove')
+    async removeFriend(@Req() req: Request, @Body() dto: CreateFriendshipDTO){
+        const user : User = req.user as User;
+        this.userservice.removeFriend(user.id, dto);
         return {message: 'friend removed'};
     }
-    @Post(':id/accept')
-    async acceptFriend(@Param('id') id: string, @Body() dto: CreateFriendshipDTO){
-        this.userservice.acceptFriend(id, dto);
+    @Post('/accept')
+    async acceptFriend(@Req() req: Request, @Body() dto: CreateFriendshipDTO){
+        const user : User = req.user as User;
+        this.userservice.acceptFriend(user.id, dto);
         return {message: 'friend accepted'};
     }
-    @Post(':id/block')
-    async blockFriend(@Param('id') id: string, @Body() dto: CreateFriendshipDTO){
-        this.userservice.blockFriend(id, dto);
+    @Post('/block')
+    async blockFriend(@Req() req: Request, @Body() dto: CreateFriendshipDTO){
+        const user : User = req.user as User;
+        this.userservice.blockFriend(user.id, dto);
         return {message: 'friend blocked'};
     }
-    @Get(':id/friends')
-    async getFriends(@Param('id') id: string){
-        return this.userservice.getFriends(id);
+    @Get('/friends')
+    async getFriends(@Req() req: Request){
+        const user : User = req.user as User;
+        return this.userservice.getFriends(user.id);
     }
-    @Post(':id/friend')
-    async getFriend(@Param('id') id: string,  @Body() dto: CreateFriendshipDTO){
-        console.log('here');
-        return this.userservice.getFriend(id, dto);
+    @Post('/friend')
+    async getFriend(@Req() req: Request,  @Body() dto: CreateFriendshipDTO){
+        const user : User = req.user as User;
+        return this.userservice.getFriend(user.id, dto);
     }
-    @Get(':id/pending')
-    async getPendings(@Param('id') id: string){
-        return this.userservice.getPendings(id);
+    @Get('/pending')
+    async getPendings(@Req() req: Request){
+        const user : User = req.user as User;
+        return this.userservice.getPendings(user.id);
     }
 
-    @Get(':id/blocked')
-    async getBlocked(@Param('id') id: string){
-        return this.userservice.getBlocked(id);
+    @Get('/blocked')
+    async getBlocked(@Req() req: Request){
+        const user : User = req.user as User;
+        return this.userservice.getBlocked(user.id);
     }
 
 
