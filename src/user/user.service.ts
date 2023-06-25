@@ -6,6 +6,10 @@ import { CreateFriendshipDTO } from './dto/createFriendship.dto';
 @Injectable()
 export class UserService {
 
+    
+    prisma = new PrismaClient();
+    constructor(){}
+    
     updateOnlineStatus(id: string, status: boolean) {
         throw new Error('Method not implemented.');
     }
@@ -15,10 +19,6 @@ export class UserService {
     bestRanked() {
         throw new Error('Method not implemented.');
     }
-
-    prisma = new PrismaClient();
-    constructor(){}
-    
     
     UpdateUser(id: string, UserData: UpdateUserDTO) {
         return this.prisma.user.update({where: {id: id}, data: UserData as any});
@@ -39,6 +39,7 @@ export class UserService {
     }
     async FindbyID(id: string) {
         const prisma = new PrismaClient();
+        //Throw error if he's blocked or he blocked the other user
         return prisma.user.findUnique({where:  {id: id},
             select: {
                 username: true,
@@ -49,11 +50,7 @@ export class UserService {
             }
         });
     }
-    // FindbyName(username: string) {
-    //     const prisma = new PrismaClient();
-    //     console.log(username);
-    //     return prisma.user.findFirst({where: {username: username}});
-    // }
+
 
     //Friendship
 
@@ -65,6 +62,7 @@ export class UserService {
                 sender: {connect: {id: id}},
                 receiver: {connect: {id: receiverId}},
                 status: 'pending',
+                blockerId: '',
             },
         });
     }
@@ -79,6 +77,13 @@ export class UserService {
                 ],
             },
         });
+
+        // const {Id} = dto;
+        // await this.prisma.friendship.delete({
+        //     where: {
+        //         id: Id,
+        //     },
+        // });
     }
 
     async acceptFriend(id : string, dto :CreateFriendshipDTO){
@@ -94,6 +99,16 @@ export class UserService {
                 status: 'accepted',
             },
         });
+
+        // const {Id} = dto;
+        // await this.prisma.friendship.update({
+        //     where: {
+        //        id: Id,
+        //     },
+        //     data: {
+        //         status: 'accepted',
+        //     },
+        // });
     }
 
     async blockFriend(id : string, dto :CreateFriendshipDTO){
@@ -108,8 +123,21 @@ export class UserService {
             },
             data: {
                 status: 'blocked',
+                blockerId: id,
             },
         });
+
+        // const {Id} = dto;
+        // await this.prisma.friendship.update({
+        //     where: {
+        //        id: Id,
+
+        //     },
+        //     data: {
+        //         status: 'blocked',
+        //         blockerId: id,
+        //     },
+        // });
     }
 
     //should be updated
@@ -122,8 +150,7 @@ export class UserService {
                 ],
             },
             {status: 'accepted'},
-            ],
-            
+            ], 
         },});
         return res;
     }
@@ -150,7 +177,6 @@ export class UserService {
             AND:[{
                 OR: [
                     {senderId: id},
-                    {receiverId: id},
                 ],
             },
             {status: 'pending'},
@@ -162,6 +188,22 @@ export class UserService {
         return res;
     }
 
+
+    async getInvitations(id : string){
+        const res = await this.prisma.friendship.findMany({where: {
+            AND:[{
+                OR: [
+                    {receiverId: id},
+                ],
+            },
+            {status: 'pending'},
+            ],
+            
+         },
+        
+        });
+        return res;
+    }
     async getBlocked(id : string){
         const res = await this.prisma.friendship.findMany({where: {
             AND:[{
@@ -171,12 +213,31 @@ export class UserService {
                 ],
             },
             {status: 'blocked'},
+            {blockerId: id},
             ],
             
         },});
         return res;
     }
 
+
+    async Players() {
+        const players = await this.prisma.user.findMany({
+           orderBy: {
+             XP: 'desc',
+           },
+           select: {
+            avatar: true,
+             rank: true,
+             username: true,
+             level: true,
+             XP: true,
+             topaz: true,
+           }
+        });
+        // const res = players.slice(3);
+        return players;
+     }
     // async firstUpdate(data: Body) {
     //     return this.prisma.user.update({where: {id: id}, data: data as any});
     // }

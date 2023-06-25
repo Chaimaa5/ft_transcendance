@@ -114,7 +114,8 @@ export class ProfileService {
             }
         });
     }
-    async Friends(id: string): Promise<{ sentFriendships: any[], receivedFriendships: any[] }>  {
+
+    async Friends(id: string) {
         const sentPromise = await this.prisma.user.findUnique({
              where: { id: id },
            }).sentFriendships({
@@ -124,6 +125,7 @@ export class ProfileService {
              select: {
                receiver: {
                  select: {
+                     id: true,
                      username: true,
                      avatar: true,
                      XP: true,
@@ -141,6 +143,7 @@ export class ProfileService {
              select: {
                sender: {
                  select: {
+                   id: true,
                    username: true,
                    avatar: true,
                    XP: true,
@@ -149,13 +152,13 @@ export class ProfileService {
                },
              },
            });
-        const [received, sent] = await Promise.all([receivedPromise, sentPromise]);
-        const sentFriendships = sent ?? [];
-        const receivedFriendships = received ?? [];
-        return {
-          sentFriendships: sentFriendships,
-          receivedFriendships: receivedFriendships,
-        };
+           const Friendships = receivedPromise?.map((friendship) => friendship.sender);
+           const Friendships2 = sentPromise?.map((friendship) => friendship.receiver);
+
+           return{
+            ...Friendships, ...Friendships2
+            
+        }
     }
     async MatchHistory(id: string) {
         //should add the result
@@ -181,6 +184,7 @@ export class ProfileService {
 
        });
     }
+
     async Games(id: string) {
         return await this.prisma.user.findUnique({where:{id : id},
             select: {
@@ -190,6 +194,7 @@ export class ProfileService {
             }
         });
     }
+
     async CountFriends(id: string){
         const number = await this.prisma.friendship.count({
             where: {
@@ -232,13 +237,20 @@ export class ProfileService {
         };
     }
     async Profile(id: string) {
-        return await this.prisma.user.findUnique({where:{id : id},
+        const friends = await this.CountFriends(id);
+        const user = await this.prisma.user.findUnique({where:{id : id},
             select: {
                 level: true,
                 XP: true,
-                // rank: true,
+                rank: true,
             }
         });
+        return{
+            'level':user?.level,
+            'xp': user?.XP,
+            'rank': user?.rank,
+            'friend':friends
+        }
     }
     
     

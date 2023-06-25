@@ -6,26 +6,26 @@ import { Request } from 'express';
 // import { SocketGateway } from 'src/socket/socket.gateway';
 import { AuthGuard } from '@nestjs/passport';
 import { User } from '@prisma/client';
+import { ApiTags } from '@nestjs/swagger';
 @Controller('user')
+@ApiTags('user')
 @UseGuards(AuthGuard('jwt'))
 export class UserController{
-    constructor(private readonly userservice: UserService
-        ){}
+    constructor(private readonly userservice: UserService){}
         
-        
-        //User Management
-        // @Get()
-        // async FindMany() {
-            //     return this.userservice.GetMany();
-            // }
-            
-            //working
+    //working
     @Get()
     async FindbyID(@Req() req: Request){
         const user : User = req.user as User;
         return  await this.userservice.FindbyID(user.id);
     }
 
+    @Get('players')
+    async Players(){
+        console.log('here');
+        // const user : User = req.user as User;
+        return  await this.userservice.Players();
+    }
     //working
     @Delete()
     async DeleteUser(@Req() req: Request){
@@ -66,6 +66,12 @@ export class UserController{
         this.userservice.blockFriend(user.id, dto);
         return {message: 'friend blocked'};
     }
+    @Post('/unblock')
+    async unblockFriend(@Req() req: Request, @Body() dto: CreateFriendshipDTO){
+        const user : User = req.user as User;
+        this.userservice.removeFriend(user.id, dto);
+        return {message: 'friend unblocked'};
+    }
     @Get('/friends')
     async getFriends(@Req() req: Request){
         const user : User = req.user as User;
@@ -87,6 +93,7 @@ export class UserController{
         const user : User = req.user as User;
         return this.userservice.getBlocked(user.id);
     }
+
 
 
     // @Patch('online.:id')

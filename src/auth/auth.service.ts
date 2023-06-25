@@ -37,6 +37,8 @@ export class AuthService {
                     win: 0,
                     loss: 0,
                     status: false,
+                    rank: 0,
+                    level: 0,
                     badge: '',
                     refreshToken: '',
                     createdAt: new Date(),
@@ -81,8 +83,8 @@ export class AuthService {
         const check = await this.findUser(req.user);
         const Access_Token = this.generateToken(req.user);
         const Refresh_Token = this.generateRefreshToken(req.user);
-        res.cookie('access_token', Access_Token, {httpOnly: true, secure: true,});
-        res.cookie('refresh_token', Refresh_Token, {httpOnly: true, secure: true,});
+        res.cookie('access_token', Access_Token, {httpOnly: true});
+        res.cookie('refresh_token', Refresh_Token, {httpOnly: true});
         const encryptedToken = this.encryptToken(Refresh_Token);
         this.userService.UpdateRefreshToken(check.id, encryptedToken)
         return(res);

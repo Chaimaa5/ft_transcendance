@@ -13,6 +13,14 @@ export class FortyTwoStrategy extends PassportStrategy(Strategy, '42') {
     });
   }
 
+  // constructor() {
+  //   super({
+  //     clientID: 'u-s4t2ud-b634b52bdaf295ec346aab97a42889717ff432ea4a3a707dd491cd650a5c1a18',
+  //     clientSecret: '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',
+  //     callbackURL: 'http://10.12.2.12:3001/auth',
+  //   });
+  // }
+
   async validate(accessToken: string, refreshToken: string, profile: any){
     const prisma = new PrismaClient();
     const user =  {

@@ -20,11 +20,12 @@ model User {
   win           Int
   loss          Int
   games         Int? 
+  rank          Int
   refreshToken  String?
   status        Boolean
   badge         String[]
   createdAt     DateTime             @default(now())
-  sentFriendships   Friendship[]     @relation("SenderUser")
+  sentFriendships   Friendship[]     @relation("SenderUser") 
   receivedFriendships   Friendship[] @relation("ReceiverUser")
   groupMembership GroupMembership[]  @relation("UserMembership")
   message       Message[]            @relation("MessageToUser")
@@ -39,6 +40,7 @@ model Friendship {
   receiver      User                  @relation("ReceiverUser", fields: [receiverId], references: [id])
   receiverId    String   
   status        String
+  blockerId     String
   createdAt     DateTime              @default(now())
 
 }
