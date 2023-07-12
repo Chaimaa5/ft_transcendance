@@ -10,7 +10,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const corsOptions = {
-    origin: 'http://10.12.2.12:5173',
+    origin: 'http://localhost:8000',
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
@@ -19,6 +19,6 @@ async function bootstrap() {
   app.useWebSocketAdapter(new IoAdapter(app));
   app.use(cors(corsOptions));
   app.use(cookieParser());
-  await app.listen(3001);
+  await app.listen(3000);
 }
 bootstrap();

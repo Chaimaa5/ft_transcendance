@@ -7,11 +7,12 @@ import { PrismaClient } from '@prisma/client';
 export class FortyTwoStrategy extends PassportStrategy(Strategy, '42') {
   constructor() {
     super({
-      clientID: 'u-s4t2ud-49c2d736530779b94f8140ddc372953496ed55501ef43019c653e97dee36f776',
-      clientSecret: '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',
-      callbackURL: 'http://localhost:3001/redirect',
+      clientID: 'u-s4t2ud-a33178931dc881357a1a66223814603ea19aca5b62a336050138c8d1164dd56b',
+      clientSecret: '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',
+      callbackURL: 'http://localhost:3000/auth',
     });
   }
+
 
   // constructor() {
   //   super({

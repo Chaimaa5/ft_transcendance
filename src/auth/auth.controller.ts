@@ -15,21 +15,21 @@ export class AuthController {
     handleLogin(){}
 
  
-    // @Get('/auth')
-    // @UseGuards(AuthGuard('42'))
-    // async handleAuth(@Req() req: Request, @Res() res: Response){
-    //     // console.log(req.user);
-    //    await this.authservice.signIn(res, req);
-    //    return res.send('access');
-    // }
-
-    @Get('/redirect')
+    @Get('/auth')
     @UseGuards(AuthGuard('42'))
     async handleAuth(@Req() req: Request, @Res() res: Response){
         // console.log(req.user);
        await this.authservice.signIn(res, req);
        return res.send('access');
     }
+
+    // @Get('/redirect')
+    // @UseGuards(AuthGuard('42'))
+    // async handleAuth(@Req() req: Request, @Res() res: Response){
+    //     // console.log(req.user);
+    //    await this.authservice.signIn(res, req);
+    //    return res.send('access');
+    // }
     @Get('/refresh')
     @UseGuards(AuthGuard('jwt'))
     async RefreshToken(@Req() req: Request, @Res() res: Response){

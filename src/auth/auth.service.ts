@@ -93,7 +93,7 @@ export class AuthService {
     signOut(res: Response) {
         res.clearCookie('access_token');
         res.clearCookie('refresh_token');
-        res.redirect('http://10.12.2.12:5173/login');
+        res.redirect('http://localhost:8000/login');
     } 
 
     async RefreshTokens(req: Request, res: Response) {
