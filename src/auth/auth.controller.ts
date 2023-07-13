@@ -49,6 +49,7 @@ export class AuthController {
     }
 
     @Get('/generate-qrcode')
+    @UseGuards(AuthGuard('jwt'))
     async HandleTFA(@Req() req: Request, @Res() res: Response){
         const user : User = req.user as User;
         const qr = await this.authservice.generateQRCode(user.id);
@@ -57,6 +58,7 @@ export class AuthController {
     }
 
     @Post('/enable')
+    @UseGuards(AuthGuard('jwt'))
     async EnableTFA(@Req() req: Request, @Body(ValidationPipe) authTFA: TFA){
         const user : User = req.user as User;
         const isCodeValid = this.authservice.verifyTFA(user, authTFA.code);

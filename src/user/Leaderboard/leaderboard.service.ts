@@ -25,6 +25,7 @@ export class LeaderboardService {
     }
     async Palyers() {
        const players = await this.prisma.user.findMany({
+          take: 3,
           orderBy: {
             XP: 'desc',
           },
@@ -37,7 +38,6 @@ export class LeaderboardService {
             topaz: true,
           }
        });
-       const res = players.slice(3);
-       return res;
+       return players;
     }
 }
