@@ -1,8 +1,11 @@
-import { Controller, Get,  UseGuards,  Res, Req, Headers} from '@nestjs/common';
+import { Controller, Get,  Post, UseGuards,  Res, Req, Headers, UnauthorizedException, Body, ValidationPipe} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { Request, Response } from 'express';
 import { ApiTags } from '@nestjs/swagger';
+import * as qrcode from 'qrcode';
+import { User } from '@prisma/client';
+import { TFA } from './dto/TFA.dto';
 
 
 @Controller('')
@@ -45,11 +48,21 @@ export class AuthController {
         this.authservice.signOut(res);
     }
 
-    @Get('/enable')
-    async handletfa(@Req() req: Request, @Res() res: Response){
-        const qr= await this.authservice.generateQRCode(req.originalUrl);
-        console.log(qr);
-        return qr;
+    @Get('/generate-qrcode')
+    async HandleTFA(@Req() req: Request, @Res() res: Response){
+        const user : User = req.user as User;
+        const qr = await this.authservice.generateQRCode(user.id);
+        res.setHeader('Content-Type', 'image/png');
+        qrcode.toFileStream(res, qr);
     }
 
+    @Post('/enable')
+    async EnableTFA(@Req() req: Request, @Body(ValidationPipe) authTFA: TFA){
+        const user : User = req.user as User;
+        const isCodeValid = this.authservice.verifyTFA(user, authTFA.code);
+
+        if(!isCodeValid)
+            throw new UnauthorizedException('invalid code');
+        await this.authservice.activateTFA(user.id);
+    }
 }

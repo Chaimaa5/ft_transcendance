@@ -6,11 +6,14 @@ import { Request, Response } from 'express';
 import * as crypto from 'crypto';
 import { UserService } from 'src/user/user.service';
 import { ConfigService } from 'src/config/config.service';
-import { toDataURL } from 'qrcode';
+// import { toDataURL } from 'qrcode';
+import { authenticator } from 'otplib';
+import { TFA } from './dto/TFA.dto';
 
 @Injectable()
 export class AuthService {
-    
+
+   
     constructor(private readonly jwtService: JwtService, private readonly userService: UserService,
         private configService: ConfigService ){}
     secretKey = 'secret';
@@ -126,8 +129,39 @@ export class AuthService {
 
     //TwoFactorAuth
     
-    async generateQRCode(authUrl: string){
-        return await toDataURL(authUrl);
+    async generateQRCode(id: string){
+        const secret = authenticator.generateSecret();
+        const app = "Trans";
+        const account = "celmhan";
+
+        //update secret in database
+        const prisma = new PrismaClient();
+        await prisma.user.update({
+            where: {id: id}, 
+            data: {TwoFacSecret: secret}
+    });
+        const authUrl = authenticator.keyuri(account, app, secret);
+        return (authUrl);
+        // return await toDataURL(authUrl);
     }
+
+
+    async verifyTFA(user: any, code: string) {
+        // check if user exist
+
+        return await authenticator.verify({
+            token: code,
+            secret: user.TwoFacSecret
+        });
+    }
+
+    async activateTFA(id: string){
+        const prisma = new PrismaClient();
+        await prisma.user.update({
+            where: {id: id}, 
+            data: {isTwoFacEnabled: true}
+    });
+    }
+    
 }
 
