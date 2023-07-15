@@ -2,23 +2,23 @@ import { ApiProperty } from "@nestjs/swagger"
 
 export class UpdateUserDTO{
   @ApiProperty()
-  id        :number    
+  id?        :number    
   @ApiProperty()             
-  username  :String
+  username?  :String
   @ApiProperty()
-  fullname  :String
+  fullname?  :String
   @ApiProperty()
-  avatar    :String
+  avatar?    :String
   @ApiProperty()
-  TFA       :Boolean
+  TFA?       :Boolean
   @ApiProperty()
-  TFASecret :String
+  TFASecret? :String
   @ApiProperty()
-  XP        :number
+  XP?        :number
   @ApiProperty()
-  win       :number
+  win?       :number
   @ApiProperty()
-  loss      :number
+  loss?      :number
   @ApiProperty()
-  draw      :number
+  draw?      :number
 }

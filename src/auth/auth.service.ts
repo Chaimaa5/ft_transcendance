@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaClient, User } from '@prisma/client';
+import { Achievement, PrismaClient, User } from '@prisma/client';
 import { JwtPayload, VerifyOptions } from 'jsonwebtoken';
 import { Request, Response } from 'express';
 import * as crypto from 'crypto';
@@ -17,45 +17,7 @@ export class AuthService {
     constructor(private readonly jwtService: JwtService, private readonly userService: UserService,
         private configService: ConfigService ){}
     secretKey = 'secret';
-    async CreateUser(user: any)
-    {
-        const prisma = new PrismaClient();
-        const UserExists = await prisma.user.findUnique({
-            where:{id: user.id},
-        });
-        if(UserExists){
-            console.log('User already exists');
-            return user;
-        }
-        else{
-              const newUser = await prisma.user.create({
-                data:{
-                    id: user.id,
-                    username: user.username,
-                    fullname: user.fullname,
-                    avatar: user.avatar,        // Add the required properties
-                    isTwoFacEnabled: false,
-                    TwoFacSecret: '',
-                    XP: 0,
-                    win: 0,
-                    loss: 0,
-                    status: false,
-                    rank: 0,
-                    level: 0,
-                    badge: '',
-                    refreshToken: '',
-                    createdAt: new Date(),
-                }
-            });
-            return user;
-        }
-        return false;
-    }
-    
-    async findUser(user: any) {
-        const UserExists = await this.CreateUser(user);
-        return UserExists;
-    }
+  
     encryptToken(token: string) {
         const cipher = crypto.createCipher('aes-256-cbc', this.secretKey);
         let encrypted = cipher.update(JSON.stringify(token), 'utf8', 'hex');
@@ -83,7 +45,7 @@ export class AuthService {
 
     async signIn(res: Response, req: Request) {
         //check is a user
-        const check = await this.findUser(req.user);
+        const check = await this.userService.findUser(req.user);
         const Access_Token = this.generateToken(req.user);
         const Refresh_Token = this.generateRefreshToken(req.user);
         res.cookie('access_token', Access_Token, {httpOnly: true});
@@ -103,7 +65,7 @@ export class AuthService {
 
         console.log(req);
         const users: any = req.user;
-        const user = await this.findUser(users.user);
+        const user = await this.userService.findUser(users.user);
         if (!user)
             throw new ForbiddenException('User Does not exist');
         const decryptedToken = this.decryptToken(user.refreshToken);

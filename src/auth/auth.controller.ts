@@ -23,7 +23,7 @@ export class AuthController {
     async handleAuth(@Req() req: Request, @Res() res: Response){
         // console.log(req.user);
        await this.authservice.signIn(res, req);
-       return res.send('access');
+       return res.redirect('http://localhost:8000/setup');
     }
 
     // @Get('/redirect')

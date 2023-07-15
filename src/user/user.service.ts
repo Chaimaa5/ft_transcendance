@@ -5,11 +5,61 @@ import { CreateFriendshipDTO } from './dto/createFriendship.dto';
 
 @Injectable()
 export class UserService {
+    async userSetup(id: string, avatar: Express.Multer.File, data: UpdateUserDTO) {
+        // await this.prisma.user.update({where: {id: id}, data: data as any});
+        console.log("file", avatar.filename)
+        await this.prisma.user.update({where: {id: id}, data: {avatar: avatar.filename}});
+    }
+ 
 
     
     prisma = new PrismaClient();
     constructor(){}
+    async CreateUser(user: any)
+    {
+        const prisma = new PrismaClient();
+        const UserExists = await prisma.user.findUnique({
+            where:{id: user.id},
+        });
+        if(UserExists){
+            console.log('User already exists');
+            return user;
+        }
+        else{
+            const defaultAchievements  = [
+                {id: 1, Achievement: "x", Achieved: false},
+            ];
+            let rankCount = await prisma.user.count();
+            if(!rankCount)
+                rankCount = 1;
+              const newUser = await prisma.user.create({
+                data:{
+                    id: user.id,
+                    username: user.username,
+                    fullname: user.fullname,
+                    avatar: user.avatar,
+                    isTwoFacEnabled: false,
+                    TwoFacSecret: '',
+                    XP: 0,
+                    win: 0,
+                    loss: 0,
+                    status: false,
+                    rank: rankCount,
+                    level: 0,
+                    badge: {create: defaultAchievements},
+                    refreshToken: '',
+                    createdAt: new Date(),
+                }
+            });
+            return newUser;
+        }
+        return false;
+    }
     
+    async findUser(user: any) {
+        const UserExists = await this.CreateUser(user);
+        return UserExists;
+    }
     updateOnlineStatus(id: string, status: boolean) {
         throw new Error('Method not implemented.');
     }
@@ -33,9 +83,40 @@ export class UserService {
         const prisma = new PrismaClient();
         return prisma.user.findMany();
     }
-    DeleteUser(id: string) {
+
+    async  deleteGroups(id: string) {
+        await this.prisma.groupMembership.deleteMany({
+            where: {
+            userId: id
+        }})
+        await this.prisma.room.deleteMany({where:{ownerId: id}})
+    }
+    async DeleteUser(id: string) {
         const prisma = new PrismaClient();
-        return prisma.user.delete({where: {id: id}});
+        await prisma.friendship.deleteMany({where:  {
+            OR: [
+            {senderId: id},
+            {receiverId: id},]
+        }});
+        this.deleteGroups(id);
+        this.deleteAchievements(id);
+        this.deleteGames(id);
+        await prisma.user.delete({where: {id: id}});
+    }
+    async deleteGames(id: string) {
+        await this.prisma.game.deleteMany({
+            where: {
+                OR: [
+                    {playerId1: id},
+                    {playerId2: id}
+                ]
+            }
+           })
+    }
+    async deleteAchievements(id: string) {
+       await this.prisma.achievement.deleteMany({
+        where: {userId: id}
+       })
     }
     async FindbyID(id: string) {
         const prisma = new PrismaClient();
@@ -241,4 +322,12 @@ export class UserService {
     // async firstUpdate(data: Body) {
     //     return this.prisma.user.update({where: {id: id}, data: data as any});
     // }
+
+
+    uploadImage(id: string, avatar: Express.Multer.File) {
+        
+    }
+
 }
+
+

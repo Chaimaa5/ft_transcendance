@@ -1,12 +1,18 @@
-import { Body, Controller, Delete, Get, OnApplicationShutdown, Param, Patch, Post, Put, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, OnApplicationShutdown, Param, Patch, Post, Put, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateUserDTO } from './dto/updatedto.dto'
 import { CreateFriendshipDTO } from './dto/createFriendship.dto';
-import { Request } from 'express';
+import { Request} from 'express';
 // import { SocketGateway } from 'src/socket/socket.gateway';
 import { AuthGuard } from '@nestjs/passport';
 import { User } from '@prisma/client';
 import { ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Multer } from 'multer';
+import { Config } from './multer.middlewear';
+import * as fs from 'fs';
+
+
 @Controller('user')
 @ApiTags('user')
 @UseGuards(AuthGuard('jwt'))
@@ -33,11 +39,23 @@ export class UserController{
         return this.userservice.DeleteUser(user.id);
     }
 
-    //working
+
     @Post('')
-    async UpdateUser(@Req() req: Request, @Body() UserData: UpdateUserDTO){
+    async UpdateUser(@Req() req: Request, @Body() data: UpdateUserDTO){
         const user : User = req.user as User;
-        return this.userservice.UpdateUser(user.id, UserData);
+        this.userservice.UpdateUser(user.id, data);
+    }
+
+    //working
+    @Post('setup')
+    @UseInterceptors(FileInterceptor('avatar', Config)) 
+    async UserSetup(@Req() req: Request, @UploadedFile() avatar: Express.Multer.File, @Body() data: UpdateUserDTO){
+        const user : User = req.user as User;
+        // const filePath = `./uploads/${avatar.originalname}`;
+
+        // // Save the file using the file system module
+        // fs.writeFileSync(filePath, avatar.buffer);
+        this.userservice.userSetup(user.id, avatar, data);
     }
 
     //Friendship Management

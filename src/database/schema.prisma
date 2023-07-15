@@ -7,6 +7,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Achievement{
+  id Int @id
+  Achievement String
+  Achieved    Boolean
+  userId String
+  user User? @relation("Achieved", fields: [userId], references: [id])
+}
 model User {
   id            String                  @id
   username      String
@@ -19,13 +26,14 @@ model User {
   topaz         Int?
   win           Int
   loss          Int
-  games         Int? 
+  games         Int?
   rank          Int
   refreshToken  String?
   status        Boolean
-  badge         String[]
+  badge         Achievement[]       @relation("Achieved")
   createdAt     DateTime             @default(now())
   sentFriendships   Friendship[]     @relation("SenderUser") 
+  rooms             Room[]  @relation("Ownership")
   receivedFriendships   Friendship[] @relation("ReceiverUser")
   groupMembership GroupMembership[]  @relation("UserMembership")
   message       Message[]            @relation("MessageToUser")
@@ -67,7 +75,8 @@ model  Room {
   password    String
   createdAt   DateTime                @default(now())
   updateAt    DateTime                @default(now())
-
+  ownerId     String
+  owner       User                      @relation("Ownership", fields: [ownerId], references: [id])
   message     Message[]                @relation("MessagesToRoom")
   membership  GroupMembership[]        @relation("GroupToRoom")
 }
