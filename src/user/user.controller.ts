@@ -1,16 +1,13 @@
-import { Body, Controller, Delete, Get, OnApplicationShutdown, Param, Patch, Post, Put, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, OnApplicationShutdown, Param, Patch, Post, Put, Req, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateUserDTO } from './dto/updatedto.dto'
-import { CreateFriendshipDTO } from './dto/createFriendship.dto';
-import { Request} from 'express';
+import { Request, Response} from 'express';
 // import { SocketGateway } from 'src/socket/socket.gateway';
 import { AuthGuard } from '@nestjs/passport';
 import { User } from '@prisma/client';
 import { ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Multer } from 'multer';
 import { Config } from './multer.middlewear';
-import * as fs from 'fs';
 
 
 @Controller('user')
@@ -23,112 +20,91 @@ export class UserController{
     @Get()
     async FindbyID(@Req() req: Request){
         const user : User = req.user as User;
-        return  await this.userservice.FindbyID(user.id);
+        return await this.userservice.FindbyID(user.id);
     }
 
     @Get('players')
     async Players(){
-        console.log('here');
-        // const user : User = req.user as User;
-        return  await this.userservice.Players();
+        return await this.userservice.Players();
     }
     //working
     @Delete()
-    async DeleteUser(@Req() req: Request){
+    async DeleteUser(@Req() req: Request, @Res() res: Response){
         const user : User = req.user as User;
-        return this.userservice.DeleteUser(user.id);
-    }
-
-
-    @Post('')
-    async UpdateUser(@Req() req: Request, @Body() data: UpdateUserDTO){
-        const user : User = req.user as User;
-        this.userservice.UpdateUser(user.id, data);
+        return await this.userservice.DeleteUser(user.id, res);
     }
 
     //working
     @Post('setup')
     @UseInterceptors(FileInterceptor('avatar', Config)) 
-    async UserSetup(@Req() req: Request, @UploadedFile() avatar: Express.Multer.File, @Body() data: UpdateUserDTO){
+    async UserSetup(@Req() req: Request,@Res() res: Response ,@UploadedFile() avatar: Express.Multer.File, @Body() data: UpdateUserDTO){
         const user : User = req.user as User;
-        // const filePath = `./uploads/${avatar.originalname}`;
-
-        // // Save the file using the file system module
-        // fs.writeFileSync(filePath, avatar.buffer);
-        this.userservice.userSetup(user.id, avatar, data);
+        await this.userservice.userSetup(user.id, avatar, data);
     }
 
     //Friendship Management
     //working
-    @Post('/add')
-    async addFriend(@Req() req: Request, @Body() dto: CreateFriendshipDTO){
+    @Get('/add/:id')
+    async addFriend(@Req() req: Request, @Param('id') id: string){
         const user : User = req.user as User;
-         this.userservice.addFriend(user.id, dto);
+        await this.userservice.addFriend(user.id, id);
          return {message: 'friend added'};
     }
-    @Post('/remove')
-    async removeFriend(@Req() req: Request, @Body() dto: CreateFriendshipDTO){
+    @Get('/remove/:id')
+    async removeFriend(@Req() req: Request, @Param('id') id: string){
         const user : User = req.user as User;
-        this.userservice.removeFriend(user.id, dto);
+        await this.userservice.removeFriend(user.id, id);
         return {message: 'friend removed'};
     }
-    @Post('/accept')
-    async acceptFriend(@Req() req: Request, @Body() dto: CreateFriendshipDTO){
+    @Get('/accept/:id')
+    async acceptFriend(@Req() req: Request, @Param('id') id: string){
         const user : User = req.user as User;
-        this.userservice.acceptFriend(user.id, dto);
+        await this.userservice.acceptFriend(user.id, id);
         return {message: 'friend accepted'};
     }
-    @Post('/block')
-    async blockFriend(@Req() req: Request, @Body() dto: CreateFriendshipDTO){
+    @Get('/block/:id')
+    async blockFriend(@Req() req: Request, @Param('id') id: string){
         const user : User = req.user as User;
-        this.userservice.blockFriend(user.id, dto);
+        await this.userservice.blockFriend(user.id, id);
         return {message: 'friend blocked'};
     }
-    @Post('/unblock')
-    async unblockFriend(@Req() req: Request, @Body() dto: CreateFriendshipDTO){
+    @Get('/unblock/:id')
+    async unblockFriend(@Req() req: Request, @Param('id') id: string){
         const user : User = req.user as User;
-        this.userservice.removeFriend(user.id, dto);
+        await this.userservice.removeFriend(user.id, id);
         return {message: 'friend unblocked'};
     }
     @Get('/friends')
     async getFriends(@Req() req: Request){
         const user : User = req.user as User;
-        return this.userservice.getFriends(user.id);
+        return await this.userservice.getFriends(user.id);
     }
-    @Post('/friend')
-    async getFriend(@Req() req: Request,  @Body() dto: CreateFriendshipDTO){
+    @Get('/friend/:id')
+    async getFriend(@Req() req: Request,  @Param('id') id: string){
         const user : User = req.user as User;
-        return this.userservice.getFriend(user.id, dto);
+        return await this.userservice.getFriend(user.id, id);
     }
     @Get('/pending')
     async getPendings(@Req() req: Request){
         const user : User = req.user as User;
-        return this.userservice.getPendings(user.id);
+        return await this.userservice.getPendings(user.id);
     }
 
     @Get('/blocked')
     async getBlocked(@Req() req: Request){
         const user : User = req.user as User;
-        return this.userservice.getBlocked(user.id);
+        return await this.userservice.getBlocked(user.id);
     }
 
 
 
-    // @Patch('online.:id')
-    // async updateOnlineStatus(@Param(':id') id : string, @Body('online') status: boolean){
-    //     const user = await this.userservice.updateOnlineStatus(id, status);
-    // }
 
     // async onApplicationShutdown(signal?: string): Promise<void>{
     //     const connectedUsers = Array.from(this.socketGateway.connectedUsers);
     //     for(const userId of connectedUsers)
     //         await this.updateOnlineStatus(userId, false);
     // }
-    // @Post('/update/profile')
-    // firstUpdate(@Req() req: Request ,@Body() data: Body)
-    // {
-    //     return this.userservice.UpdateUser(id, UserData);
-    // }
+
 }
 
 

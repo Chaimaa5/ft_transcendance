@@ -8,7 +8,7 @@ datasource db {
 }
 
 model Achievement{
-  id Int @id
+  id Int @default(autoincrement())@id
   Achievement String
   Achieved    Boolean
   userId String
@@ -16,7 +16,7 @@ model Achievement{
 }
 model User {
   id            String                  @id
-  username      String
+  username      String                  @unique
   fullname      String
   avatar        String
   isTwoFacEnabled  Boolean
@@ -38,7 +38,9 @@ model User {
   groupMembership GroupMembership[]  @relation("UserMembership")
   message       Message[]            @relation("MessageToUser")
   Player1   Game[]     @relation("Player1InGame")
-  Player2   Game[] @relation("Player2InGame")
+  Player2   Game[]   @relation("Player2InGame")
+  receivedNot Notification[] @relation("NotifationSender")
+  sentNot     Notification[] @relation("NotifationReceiver")
 }
 
 model Friendship {
@@ -79,6 +81,8 @@ model  Room {
   owner       User                      @relation("Ownership", fields: [ownerId], references: [id])
   message     Message[]                @relation("MessagesToRoom")
   membership  GroupMembership[]        @relation("GroupToRoom")
+  //type
+  //admin[]
 }
 
 model  Message {
@@ -101,4 +105,17 @@ model  Game {
   playerXp2  Int
   mode       String
   rounds     Int
+  winner      String
+}
+
+model Notification {
+  id          Int @default(autoincrement()) @id 
+  type        String
+  status      String
+  sender      User        @relation("NotifationSender", fields:  [senderId], references:  [id])
+  senderId    String
+  receiver    User        @relation("NotifationReceiver", fields:  [receiverId], references:  [id])
+  receiverId  String
+  content     String
+   createdAt  DateTime                @default(now())
 }

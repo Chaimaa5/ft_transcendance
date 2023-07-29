@@ -3,13 +3,14 @@ import { extname } from 'path';
 
 export const Config = {
   storage: diskStorage({
-    destination: '/Users/mac/Desktop/transcendence/back/upload/',
+    destination: './upload/',
     filename: (req, file, callback) => {
-      const port = req.app.get('port');
+    
       const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
       const fileExtension = extname(file.originalname);
-      const filename = `${port}${uniqueSuffix}${fileExtension}`;
+      const filename = `${uniqueSuffix}${fileExtension}`;
       callback(null, filename);
     },
   }),
 };
+

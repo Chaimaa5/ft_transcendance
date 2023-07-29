@@ -7,25 +7,25 @@ import { ExtractJwt, Strategy } from "passport-jwt";
 import * as jwt from 'jsonwebtoken';
 
 @Injectable()
-export class JWTStrategy extends PassportStrategy(Strategy, 'jwt'){
+export class RefreshStrategy extends PassportStrategy(Strategy, 'Refresh'){
      constructor(){
         super({
             jwtFromRequest: ExtractJwt.fromExtractors([(request:Request) => {
-                let data = request.cookies["access_token"];
+                let data = request.cookies["refresh_token"];
                 return data
             } ]),
-            secretOrKey: process.env.JWT_ACCESS_SECRET,
+            secretOrKey: process.env.JWT_REFRESH_SECRET,
           });
     }
 
-    prisma = new PrismaClient();
+   prisma = new PrismaClient();
     async validate(payload: JwtPayload){
 
         try{
-            jwt.verify(payload.token, process.env.JWT_ACCESS_SECRET as jwt.Secret)
+            jwt.verify(payload.token, process.env.JWT_REFRESH_SECRET as jwt.Secret)
         }catch(err){
             if(err instanceof jwt.TokenExpiredError )
-                throw  new UnauthorizedException('Expired Token Exception');
+            throw  new UnauthorizedException('Expired Token Exception');
         }
         const user = await this.prisma.user.findUnique({
             where:{id: payload.id,},

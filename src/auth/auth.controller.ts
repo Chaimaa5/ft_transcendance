@@ -1,4 +1,4 @@
-import { Controller, Get,  Post, UseGuards,  Res, Req, Headers, UnauthorizedException, Body, ValidationPipe} from '@nestjs/common';
+import { Controller, Get,  Post, UseGuards,  Res, Req, Headers, Body, ValidationPipe} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { Request, Response } from 'express';
@@ -21,20 +21,15 @@ export class AuthController {
     @Get('/auth')
     @UseGuards(AuthGuard('42'))
     async handleAuth(@Req() req: Request, @Res() res: Response){
-        // console.log(req.user);
-       await this.authservice.signIn(res, req);
-       return res.redirect('http://localhost:8000/setup');
+        const check = await this.authservice.signIn(res, req);
+        if (check == 1)
+            return res.redirect('http://localhost/home');
+        else
+            return res.redirect('http://localhost/setup');
     }
 
-    // @Get('/redirect')
-    // @UseGuards(AuthGuard('42'))
-    // async handleAuth(@Req() req: Request, @Res() res: Response){
-    //     // console.log(req.user);
-    //    await this.authservice.signIn(res, req);
-    //    return res.send('access');
-    // }
     @Get('/refresh')
-    @UseGuards(AuthGuard('jwt'))
+    @UseGuards(AuthGuard('Refresh'))
     async RefreshToken(@Req() req: Request, @Res() res: Response){
         res.clearCookie('access_token');
         res.clearCookie('refresh_token');
@@ -61,10 +56,21 @@ export class AuthController {
     @UseGuards(AuthGuard('jwt'))
     async EnableTFA(@Req() req: Request, @Body(ValidationPipe) authTFA: TFA){
         const user : User = req.user as User;
-        const isCodeValid = this.authservice.verifyTFA(user, authTFA.code);
-
+        const isCodeValid  = await this.authservice.verifyTFA(user, authTFA.code);
         if(!isCodeValid)
-            throw new UnauthorizedException('invalid code');
-        await this.authservice.activateTFA(user.id);
+        {
+            await this.authservice.activateTFA(user.id);
+            return true
+        }
+        else
+            return false
     }
+
+    @Get('/disable')
+    @UseGuards(AuthGuard('jwt'))
+    async DisableTFA(@Req() req: Request){
+        const user : User = req.user as User;
+        await this.authservice.disableTFA(user.id);
+    }
+    
 }
