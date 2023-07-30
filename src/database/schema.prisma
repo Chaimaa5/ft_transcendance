@@ -35,7 +35,7 @@ model User {
   sentFriendships   Friendship[]     @relation("SenderUser") 
   rooms             Room[]  @relation("Ownership")
   receivedFriendships   Friendship[] @relation("ReceiverUser")
-  groupMembership GroupMembership[]  @relation("UserMembership")
+  Membership Membership[]  @relation("UserMembership")
   message       Message[]            @relation("MessageToUser")
   Player1   Game[]     @relation("Player1InGame")
   Player2   Game[]   @relation("Player2InGame")
@@ -55,7 +55,7 @@ model Friendship {
 
 }
 
-model GroupMembership {
+model Membership {
   id          Int                     @default(autoincrement()) @id
   room        Room                    @relation("GroupToRoom", fields: [roomId], references: [id]) 
   roomId      Int                     
@@ -74,15 +74,14 @@ model  Room {
   name        String
   image       String
   isChannel   Boolean
-  password    String
+  password    String?
   createdAt   DateTime                @default(now())
   updateAt    DateTime                @default(now())
   ownerId     String
+  type        String          
   owner       User                      @relation("Ownership", fields: [ownerId], references: [id])
   message     Message[]                @relation("MessagesToRoom")
-  membership  GroupMembership[]        @relation("GroupToRoom")
-  //type
-  //admin[]
+  membership  Membership[]        @relation("GroupToRoom")
 }
 
 model  Message {

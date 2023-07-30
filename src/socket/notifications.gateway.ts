@@ -45,7 +45,6 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
             }
             console.log('WebSocket gateway connected!');
-
-    }
+        }
 
 }

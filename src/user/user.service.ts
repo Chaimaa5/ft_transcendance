@@ -141,7 +141,7 @@ export class UserService {
     async  deleteGroups(id: string) {
         if (id)
         {
-            await this.prisma.groupMembership.deleteMany({
+            await this.prisma.membership.deleteMany({
                 where: {
                 userId: id
             }})
