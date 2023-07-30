@@ -27,7 +27,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
             }
         });
         await this.userService.updateOnlineStatus(client.data.payload.id, false)
-        console.log('WebSocket gateway desconnected!');
+        console.log('WebSocket gateway disconnected!');
     }
     
     async handleConnection(server: Socket) {
@@ -44,6 +44,8 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
                 server.emit('connectionSuccess', { message: 'Connected successfully!' });
 
             }
+            console.log('WebSocket gateway connected!');
+
     }
 
 }

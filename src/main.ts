@@ -10,7 +10,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   const port = process.env.BPORT as string;
   const corsOptions = {
-    origin: ['http://localhost:8000', 'ws://localhost:3000', 'ws://127.0.0.1:3000'],
+    origin: '*',
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
