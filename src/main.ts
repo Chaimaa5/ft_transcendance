@@ -7,10 +7,10 @@ import { setupSwagger } from './swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.setGlobalPrefix('api');
+  // app.setGlobalPrefix('api');
   const port = process.env.BPORT as string;
   const corsOptions = {
-    origin: '*',
+    origin: ['http://localhost:8000'],
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,

@@ -14,8 +14,8 @@ export class AddMember{
   roomId: number
   @ApiProperty()             
   userId  : String
-  @ApiProperty()
-  role  : String
+  // @ApiProperty()
+  // role  : String
 
 }
 
@@ -28,8 +28,8 @@ export class CreateChannel{
   type?  : String
   @ApiProperty()
   password?  : String
-  @ApiProperty()
-  members: AddMember[]
+  // @ApiProperty()
+  // members: AddMember[]
 
 }
 

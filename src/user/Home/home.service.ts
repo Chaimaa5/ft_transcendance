@@ -11,7 +11,7 @@ export class HomeService {
     constructor(){}
     
     async bestRanked(ownerId: string) {
-      if(ownerId){
+      // if(ownerId){
 
         const userBlocked = await this.prisma.friendship.findMany({
             where: {
@@ -69,9 +69,9 @@ export class HomeService {
 
         const ModifiedObject = await this.userService.updateAvatar(bestRanked)
         return ModifiedObject;
-      }
-      else
-        throw new UnauthorizedException('User  not found')
+      // }
+      // else
+      //   throw new UnauthorizedException('User  not found')
 
      }
  

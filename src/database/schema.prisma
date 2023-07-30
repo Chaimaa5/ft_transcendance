@@ -64,6 +64,7 @@ model Membership {
   role        String
   isBanned    Boolean
   isMuted     Boolean
+  muteExpiration DateTime?         
   createdAt   DateTime                @default(now())
 
 }
@@ -89,7 +90,7 @@ model  Message {
   room       Room                     @relation("MessagesToRoom", fields: [roomId], references: [id])
   roomId     Int        
   user       User                     @relation("MessageToUser", fields: [userId], references: [id])
-  userId     String         
+  userId     String
   content    String
   createdAt  DateTime                 @default(now())
 }

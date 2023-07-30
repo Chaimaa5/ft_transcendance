@@ -5,6 +5,8 @@ import { User } from '@prisma/client';
 import { ApiTags } from '@nestjs/swagger';
 import { ChatService } from './chat.service';
 import { AddMember, CreateChannel, CreateRoom } from './dto/Chat.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Config } from 'src/user/multer.middlewear';
 
 
 
@@ -14,7 +16,7 @@ import { AddMember, CreateChannel, CreateRoom } from './dto/Chat.dto';
 export class ChatController{
     constructor(private readonly chatService: ChatService){}
     
-
+    //working
     @Get('/rooms')
     async GetJoinedRooms(@Req() req: Request){
         const user = req.user as User
@@ -22,25 +24,65 @@ export class ChatController{
             return await this.chatService.GetJoinedRooms(user.id);
     }
 
-    @Post('create/:id')
-    async CreateRoom(@Req() req: Request, @Body() body: CreateRoom){
+    //working
+    @Post('/create/')
+    @UseInterceptors(FileInterceptor('image', Config)) 
+    async CreateRoom(@Req() req: Request, @Body() body: CreateRoom,@UploadedFile() image: Express.Multer.File){
         const user = req.user as User
         return await this.chatService.CreateRoom(user.id, body);
     }
 
-    @Post('createchannel/')
+    //working
+    @Post('/createchannel/')
     async CreateChannel(@Req() req: Request, @Body() body: CreateChannel){
         const user = req.user as User
+        console.log(body);
         return await this.chatService.CreateChannel(user.id, body);
     }
 
+    //working
     @Post('/add')
     async AddMember(@Req() req: Request, @Body() body: AddMember ){
         const user = req.user as User
         return await this.chatService.AddMember(user.id, body);
     }
    
+    //working
+    @Get('/channels')
+    async GetChannels(@Req() req: Request){
+        const user = req.user as User
+        return await this.chatService.GetChannels(user.id)
+    }
 
+
+    //working
+    @Get('/joinedChannels')
+    async GetJoinedChannels(@Req() req: Request){
+        const user = req.user as User
+        return await this.chatService.GetJoinedChannels(user.id)
+    }
+
+      //working
+      @Post(':membershipId/setAdmin')
+      async SetAdmin(@Req() req: Request, @Param('membershipId') Id: any){
+          const user = req.user as User
+          const membershipId = parseInt(Id, 10)
+          return await this.chatService.setAdmin(user.id, membershipId)
+      }
+
+    @Delete()
+    async DeleteChannel(@Req() req: Request, @Param('roomId') Id: any){
+        const user = req.user as User
+        const roomId = parseInt(Id, 10)
+        return await this.chatService.DeleteChannel(user.id, roomId)
+    }
+
+    @Get('/message/:roomId')
+    async GetMessages(@Req() req: Request, @Param('roomId') Id: any){
+        const user = req.user as User
+        const roomId = parseInt(Id, 10)
+        return await this.chatService.GetMessages(user.id, roomId)
+    }
 }
 
 

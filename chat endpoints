@@ -1,6 +1,8 @@
 //fetch dms
 user data(avatar + username) + room id
 
+//fetch channel messages
+
 //fetch channels joined
 room data + number 
 
@@ -8,7 +10,6 @@ room data + number
 
 //fetch protected and private channels
 
-//fetch channel messages
 
 //owner endpoints
     //kick
@@ -29,3 +30,6 @@ room data + number
 //join public or protected channel
 
 //get invited to private channels
+
+
+//update channel

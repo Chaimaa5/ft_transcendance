@@ -3,45 +3,75 @@ import { Membership, PrismaClient } from '@prisma/client';
 import { Response } from 'express';
 import { NOTFOUND } from 'dns';
 import { AddMember, CreateChannel, CreateRoom, UpdateChannel } from './dto/Chat.dto';
+import * as crypto from 'crypto';
+import { isHexColor } from 'class-validator';
 
 @Injectable()
 export class ChatService {
+  
    
    
-    
+
     prisma = new PrismaClient();
     constructor(){}
 
     //avatar
     //username
     // last message
+    encryptPassword(password: string) {
+        if(password){
+            const secret = process.env.JWT_REFRESH_SECRET as string
+            const cipher = crypto.createCipher('aes-256-cbc', secret);
+            let encrypted = cipher.update(JSON.stringify(password), 'utf8', 'hex');
+            encrypted += cipher.final('hex');
+            return encrypted;
+        }
+        else
+            throw new UnauthorizedException('Password is NULL')
+      }
 
+
+    async updateImage(Object: any[]){
+            const ModifiedObject = Object.map((member) =>{
+              if (member){
+                  if (member.image)
+                  {
+                      if (member.image){
+                          member.image = 'http://' + process.env.HOST + '/api' + member.image
+                      }
+                  }
+              }
+              return member
+          })
+          return ModifiedObject;
+    }
     async GetJoinedRooms(id : string){
         const rooms =  await this.prisma.room.findMany({
-            where: {
-
-                    isChannel: true
-            },
+            where: {isChannel: true},
             include: {
                 membership: {
                     where: {userId: id},
+                    select: {
+                        id: true,
+                        userId: true,
+                        role: true,
+                        isBanned: true,
+                        isMuted: true,
+                    }
                 },
-                // id: true,
-                // name: true,
-                // image: true,
-                // type: true
             }
         })
+        console.log(rooms)
         return rooms
 
     }
-    async CreateRoom(ownerId: string, data: CreateRoom) {
+    async CreateRoom(ownerId: string, data: CreateRoom, image: Express.Multer.File) {
 
-        // image should be parsed and uploaded
+        const imagePath = "/upload/" + image.filename
         const room = await this.prisma.room.create({
             data: {
                 name: data.name as string,
-                image: data.image as string,
+                image: imagePath,
                 type: 'private',
                 ownerId: ownerId,
                 isChannel: false,
@@ -54,14 +84,14 @@ export class ChatService {
                 {
                     roomId: room.id,
                     userId: ownerId,
-                    role: 'member',
+                    role: 'owner',
                     isBanned: false,
                     isMuted: false
                 },
                 {
                     roomId: room.id,
                     userId: data.memberId as string,
-                    role: 'member',
+                    role: 'owner',
                     isBanned: false,
                     isMuted: false
                 }
@@ -77,46 +107,58 @@ export class ChatService {
 
             if(membership)
                 if (membership[0].role != 'member'){
-                    await this.prisma.membership.create({
-                        data: {
-                            roomId: data.roomId,
-                            userId: data.userId as string,
-                            role: 'member',
-                            isBanned: false,
-                            isMuted: false
-                        }
-                    })
-                }
+                    //check if user already exists
+                    const member = await this.prisma.membership.findFirst({where: {
+                        AND:[
+                            {roomId: data.roomId},
+                            {userId: data.userId as string}
+                        ]
+                    }})
+                    if(member)
+                        throw new UnauthorizedException('User Already Exists')
+                    else{
+                            await this.prisma.membership.create({
+                            data: {
+                                roomId: data.roomId,
+                                userId: data.userId as string,
+                                role: 'member',
+                                isBanned: false,
+                                isMuted: false
+                            }
+                        })
+                    }
+                }else
+                    throw new UnauthorizedException('User Not Granted Full Access')
         }
     }
 
-    async CreateChannel(ownerId: string, data: CreateChannel) {
+    async CreateChannel(ownerId: string, data: CreateChannel, image: Express.Multer.File) {
+        const imagePath = "/upload/" + image.filename
+        let EncryptedPaswword = ''
+        if(data.type === 'protected')
+            EncryptedPaswword = this.encryptPassword(data.password as string)
         const room = await this.prisma.room.create({
             data: {
                 name: data.name as string,
-                image: data.image as string,
+                image: imagePath,
                 type: data.type as string,
                 ownerId: ownerId,
+                password: EncryptedPaswword,
                 isChannel: true,
             }
         })
 
-        const createMembers = []
-        for (const member of data.members){
-            const {userId, role} = member
-            const createMember = await this.prisma.membership.createMany({
+            const createMember = await this.prisma.membership.create({
                 data: {
                     roomId: room.id,
-                    userId: userId as string,
-                    role: role as string,
+                    userId: ownerId as string,
+                    role: 'owner',
                     isBanned: false,
                     isMuted: false
                 }
             })
-            createMembers.push(createMember)
-        }
-        //hash password
-        //upload image
+     
+
 
     }
     
@@ -179,21 +221,53 @@ export class ChatService {
             throw new UnauthorizedException('User Is Not Owner')
     }
 
-    async changePrivacy(roomId: number, id: string, type: string){
-        //check if type is protected and add password
-        await this.prisma.room.update({
-            where: {id: roomId},
-            data: {type: type}
-        })
+    async changePrivacy(roomId: number, id: string, type: string, pw: string){
+        if (type === 'protected'){
+            let password = this.encryptPassword(pw)  
+            await this.prisma.room.update({
+                where: {id: roomId},
+                data: {
+                    type: type,
+                    password: password
+                },
+
+            })
+        }
+        else{
+            await this.prisma.room.update({
+                where: {id: roomId},
+                data: {type: type,},
+
+            })
+        }
     }
 
 
-    // async UpdateChennel(room : UpdateChannel){
-    //     const {name, image, type, password} = room
-    //     await this.prisma.room.update({where: {id: room.roomId},
-    //         data: room  
-    //     })
-    // }
+    async UpdateChannel(room : UpdateChannel, image: Express.Multer.File){
+        const {name, type, password} = room
+        const imagePath = "/upload/" + image.filename
+        let passwordEncrypted = this.encryptPassword(password as string)  
+        await this.prisma.room.update({where: {id: room.roomId},
+            data: {
+                name: room.name as string,
+                image: imagePath,
+                type: room.type as string,
+                password: passwordEncrypted,
+
+            }  
+        })
+    }
+
+    
+    async SetPassword(roomId: number, pw: string){
+        const passwordEncrypted =  this.encryptPassword(pw)
+        await this.prisma.room.update({
+            where: {id: roomId},
+            data: {
+                password: passwordEncrypted,
+            }
+        })
+    }
 
     async deleteMembership(id: number){
         await this.prisma.membership.delete({
@@ -215,4 +289,160 @@ export class ChatService {
             }
         })
     }
+
+    async muteMember(membershipId: number,  muteDuration: number){
+        const muteExpiration = new Date()
+
+        muteExpiration.setMinutes(muteExpiration.getMinutes() + muteDuration)
+        await this.prisma.membership.update({
+            where: {id: membershipId},
+            data:{
+                isMuted: true,
+                muteExpiration: muteExpiration.toISOString()
+            }
+        })
+    }
+
+    async banMember(membershipId: number){
+        await this.prisma.membership.update({
+            where: {id: membershipId},
+            data:{
+                isBanned: true,
+            }
+        })
+    }
+
+    async fetchDms(){
+
+    }
+
+
+    async GetChannels(id: string){
+        let channels = await this.prisma.room.findMany({
+            where: {
+                NOT: {
+                    membership: {
+                        some: {userId: id}
+                    }
+                },
+                AND:[
+                    {
+                        OR: [
+                            {type: 'protected'},
+                            {type: 'public'}
+                        ],
+                    },
+                    {isChannel: true},
+                ]
+            },
+            select:{
+                id: true,
+                name: true,
+                image: true,
+                type: true,
+                ownerId: true,
+            }
+        })
+
+        let  channelsModified = await Promise.all(
+        channels.map(async(channel) => {
+            if (channel.image){
+                channel.image = 'http://' + process.env.HOST + '/api' + channel.image
+            }
+                let count = await this.prisma.membership.count({
+                    where: {roomId: channel.id}
+                })
+                return {'id': channel.id,
+                        'name': channel.name,
+                        'type': channel.type,
+                        'image': channel.image,
+                        'ownerId': channel.ownerId,
+                        'count': count}
+            })
+
+        );
+
+        return channelsModified
+    }
+
+
+    async GetJoinedChannels(id: string){
+        let channels = await this.prisma.room.findMany({
+            where: {
+                membership: {
+                    some: {userId: id}
+                },
+                AND: [
+                    {isChannel: true},
+                ]
+            },
+            select:{
+                id: true,
+                name: true,
+                image: true,
+                type: true,
+                ownerId: true,
+            }
+        })
+
+        // const channelModified = this.updateImage(channels) 
+        const channelss = await Promise.all(
+        channels.map(async(channel) => {
+            if (channel.image){
+                channel.image = 'http://' + process.env.HOST + '/api' + channel.image
+            }
+                let count = await this.prisma.membership.count({
+                    where: {roomId: channel.id}
+                })
+                return {'id': channel.id,
+                        'name': channel.name,
+                        'type': channel.type,
+                        'image': channel.image,
+                        'ownerId': channel.ownerId,
+                        'count': count}
+            })
+
+        );
+        return channelss
+    }
+     
+
+    async DeleteChannel(id: string, roomId: number) {
+        const room = await this.prisma.room.findUnique({
+            where: {id: roomId}
+        })
+        if(room?.ownerId === id)
+        {
+            await this.prisma.message.deleteMany({where: {roomId: roomId}})
+            await this.prisma.membership.deleteMany({where: {roomId: roomId}})
+            await this.prisma.room.delete({where: {id: roomId}})
+        }
+        else
+            throw new UnauthorizedException('User Not Granted Full Access')
+    }
+
+    async storeMessage(roomId: number, userId: string, content: string){
+        await this.prisma.message.create({
+            data: {
+                roomId: roomId,
+                userId: userId,
+                content: content
+            }
+        })
+    }
+
+    async GetMessages(id: string, roomId: number) {
+       await this.prisma.message.findMany({
+            where: {roomId: roomId},
+            orderBy: {
+                createdAt: 'desc',
+            },
+            select: {
+                roomId: true,
+                userId: true,
+                content: true,
+            }
+       })
+    }
+  
 }
