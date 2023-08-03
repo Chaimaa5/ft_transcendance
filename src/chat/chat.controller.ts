@@ -25,19 +25,16 @@ export class ChatController{
     }
 
     //working
-    @Post('/create/')
-    @UseInterceptors(FileInterceptor('image', Config)) 
-    async CreateRoom(@Req() req: Request, @Body() body: CreateRoom,@UploadedFile() image: Express.Multer.File){
-        const user = req.user as User
-        return await this.chatService.CreateRoom(user.id, body);
-    }
+
+
 
     //working
-    @Post('/createchannel/')
-    async CreateChannel(@Req() req: Request, @Body() body: CreateChannel){
+    @Post('/create/')
+    @UseInterceptors(FileInterceptor('image', Config)) 
+    async CreateChannel(@Req() req: Request, @UploadedFile() image: Express.Multer.File, @Body() body: CreateChannel){
         const user = req.user as User
         console.log(body);
-        return await this.chatService.CreateChannel(user.id, body);
+        return await this.chatService.CreateChannel(user.id, body, image);
     }
 
     //working

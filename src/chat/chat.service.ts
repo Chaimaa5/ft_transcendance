@@ -65,13 +65,14 @@ export class ChatService {
         return rooms
 
     }
-    async CreateRoom(ownerId: string, data: CreateRoom, image: Express.Multer.File) {
 
-        const imagePath = "/upload/" + image.filename
+    async CreateRoom(ownerId: string, memberId: string, name: string) {
+
+    
         const room = await this.prisma.room.create({
             data: {
-                name: data.name as string,
-                image: imagePath,
+                name: name ,
+                image: 'imagePath',
                 type: 'private',
                 ownerId: ownerId,
                 isChannel: false,
@@ -90,7 +91,7 @@ export class ChatService {
                 },
                 {
                     roomId: room.id,
-                    userId: data.memberId as string,
+                    userId: memberId,
                     role: 'owner',
                     isBanned: false,
                     isMuted: false
@@ -443,6 +444,22 @@ export class ChatService {
                 content: true,
             }
        })
+    }
+
+    async checkMute(roomId: number, userId: string){
+        const membership = await this.prisma.membership.findFirst({
+            where: {
+                AND:[
+                    {roomId: roomId},
+                    {userId: userId}
+                ]
+            }
+        })
+        if(membership){
+            if(membership.isBanned)
+                return true
+            return false
+        }
     }
   
 }

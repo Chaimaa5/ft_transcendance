@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { UpdateUserDTO } from './dto/updatedto.dto'
 import { Response } from 'express';
 import { NOTFOUND } from 'dns';
+import { ChatService } from 'src/chat/chat.service';
 
 @Injectable()
 export class UserService {
@@ -11,6 +12,7 @@ export class UserService {
     
     
     prisma = new PrismaClient();
+    chatService = new ChatService;
     constructor(){}
 
     async GetById(id: string){
@@ -274,14 +276,14 @@ export class UserService {
                         status: 'accepted',
                     },
                 });
-                await this.addNotifications(id, Id as string, 'friendship', 'accepted your invite')
-                //emit notification
+                await this.chatService.CreateRoom(id, Id, exist.username);
+                await this.addNotifications(id, Id, 'friendship', 'accepted your invite')
             }
             else
                 throw new UnauthorizedException('User Does Not Exist')
         }
         else
-            throw new UnauthorizedException('User  not found')
+            throw new UnauthorizedException('User Does Not Exist')
     }
 
     async blockFriend(id : string, Id: string){
@@ -401,10 +403,12 @@ export class UserService {
                     ],
                 },
                 {status: 'blocked'},
-                {blockerId: id},
+                // {blockerId: id},
                 ],
                 
-            },});
+            },
+            
+        });
             return res;
         }
         else

@@ -9,7 +9,7 @@ import { PrismaClient } from "@prisma/client"
             where: {
                 isMuted: true,
                 muteExpiration: {
-                    lte: TextMetrics.toString()
+                    lte: time.toString()
                 }
             }
         })
