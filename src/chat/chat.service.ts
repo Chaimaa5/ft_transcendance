@@ -423,13 +423,16 @@ export class ChatService {
     }
 
     async storeMessage(roomId: number, userId: string, content: string){
-        await this.prisma.message.create({
-            data: {
-                roomId: roomId,
-                userId: userId,
-                content: content
-            }
-        })
+        const room = await this.prisma.room.findUnique({where: {id: roomId}})
+        if(room){
+            await this.prisma.message.create({
+                data: {
+                    roomId: roomId,
+                    userId: userId,
+                    content: content
+                }
+            })
+        }
     }
 
     async GetMessages(id: string, roomId: number) {

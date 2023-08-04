@@ -37,12 +37,16 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect{
         token = token.split(' ')[1]
         server.data.payload = await this.socketStrategy.validate(token);
         console.log('WebSocket gateway connected!');
+        console.log(server.data.payload.id)
+        if(server.data.payload.id){
+
             let user = await this.userService.GetById(server.data.payload.id)
             if (user)
             {
                 this.clients.set(server.data.payload.id , server);
                 server.to(server.id).emit('connectionSuccess', { message: 'Connected successfully!' });
             }
+        }
         }
 
 

@@ -16,7 +16,10 @@ export class UserService {
     constructor(){}
 
     async GetById(id: string){
-        return await this.prisma.user.findUnique({where : {id:id}})
+        const user = await this.prisma.user.findUnique({where : {id:id}})
+        // if(!user)
+        //     throw new UnauthorizedException('User Does not exist')
+        return user
     }
     async CreateUser(user: any)
     {
