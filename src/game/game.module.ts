@@ -8,7 +8,7 @@ import { GameGateway } from './game.gateway';
   imports: [],
   controllers: [GameController ],
   //add  GameGateway
-  providers: [GameService],
+  providers: [GameService, GameGateway],
   exports: []
 })
 export class GameModule {}

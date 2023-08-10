@@ -461,7 +461,7 @@ export class UserService {
                 if (player.avatar)
                 {
                     if (!player.avatar.includes('cdn.intra')){
-                        player.avatar = 'http://' + process.env.HOST + ':3000/api' + player.avatar
+                        player.avatar = 'http://' + process.env.HOST + ':' + process.env.BPORT +  '/api' +  player.avatar
                     }
                 }
             }
@@ -473,8 +473,32 @@ export class UserService {
    async GetNotifications(id : string){
     if(id){
         const res = await this.prisma.notification.findMany({
-            where: {receiverId: id }
+            where: {receiverId: id },
+            select:{
+                id: true,
+                type: true,
+                status: true,
+                sender:{
+                    select:{
+                        id: true,
+                        username: true,
+                        avatar: true
+                    }
+                }
+            }
         });
+
+        const notifications = res.map((notification) =>{
+            if (notification){
+                if (notification.sender.avatar)
+                {
+                    if (!notification.sender.avatar.includes('cdn.intra')){
+                        notification.sender.avatar = 'http://' + process.env.HOST + ':' + process.env.BPORT +  '/api' + notification.sender.avatar
+                    }
+                }
+            }
+            return notification
+        })
 
         return res;
     }
@@ -492,7 +516,7 @@ export class UserService {
             data: {
                 sender: {connect: {id: senderId}},
                 receiver: {connect: {id: receiverId}},
-                status: 'not seen',
+                status: false,
                 type: type,
                 content: content
             },
@@ -507,7 +531,7 @@ export class UserService {
     async DeleteAvatar(id: string) {
         await this.prisma.user.update({
             where: {id: id},
-            data:{avatar: ''}
+            data:{avatar: '/upload/avatar.png'}
         })
     }
     

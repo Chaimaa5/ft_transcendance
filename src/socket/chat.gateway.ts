@@ -32,22 +32,23 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect{
         });
     }
     
-    async handleConnection(server: Socket) {
-        let token : any =  server.handshake.headers['authorization'];
-        token = token.split(' ')[1]
-        server.data.payload = await this.socketStrategy.validate(token);
-        console.log('WebSocket gateway connected!');
-        console.log(server.data.payload.id)
-        if(server.data.payload.id){
-
-            let user = await this.userService.GetById(server.data.payload.id)
-            if (user)
-            {
-                this.clients.set(server.data.payload.id , server);
-                server.to(server.id).emit('connectionSuccess', { message: 'Connected successfully!' });
+    async handleConnection(client: Socket) {
+        let token : any =  client.handshake.headers['authorization'];
+        if(token){
+            token = token.split(' ')[1]
+            client.data.payload = await this.socketStrategy.validate(token);
+            console.log('WebSocket gateway connected!');
+            console.log(client.data.payload.id)
+            if(client.data.payload.id){
+                let user = await this.userService.GetById(client.data.payload.id)
+                if (user)
+                {
+                    this.clients.set(client.data.payload.id , client);
+                    this.server.to(client.id).emit('connectionSuccess', { message: 'Connected successfully!' });
+                }
             }
         }
-        }
+    }
 
 
     addToRoom(roomId: string, client: Socket){
@@ -73,8 +74,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect{
         }
        
     }
-    @SubscribeMessage('join')
-    joinRoom(client: Socket, roomId: string){
+    @SubscribeMessage('joinChat')
+    joinChat(client: Socket, roomId: string){
         console.log('WebSocket gateway joined!');
         this.addToRoom(roomId, client);
         client.join(roomId);

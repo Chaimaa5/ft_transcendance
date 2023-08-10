@@ -30,20 +30,22 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         console.log('WebSocket gateway disconnected!');
     }
     
-    async handleConnection(server: Socket) {
-        let token : any =  server.handshake.headers['authorization'];
-        token = token.split(' ')[1]
-         server.data.payload = await this.socketStrategy.validate(token);
-            let user = await this.userService.GetById(server.data.payload.id)
-            if (user)
-            {
-                this.clients.set(server.data.payload.id , server);
-                await this.userService.updateOnlineStatus(user.id, true)
-                // const notifications = await this.userService.GetNotifications(user.id)
-                // server.emit('notifications', notifications);
-                server.to(server.id).emit('connectionSuccess', { message: 'Connected successfully!' });
+    async handleConnection(client: Socket) {
+        let token : any =  client.handshake.headers['authorization'];
+        if(token){
+                token = token.split(' ')[1]
+                client.data.payload = await this.socketStrategy.validate(token);
+                let user = await this.userService.GetById(client.data.payload.id)
+                if (user)
+                {
+                    this.clients.set(client.data.payload.id , client);
+                    await this.userService.updateOnlineStatus(user.id, true)
+                    const notifications = await this.userService.GetNotifications(user.id)
+                    this.server.to(client.id).emit('notifications', notifications);
+                    // this.server.emit('connectionSuccess', { message: 'Connected successfully!' });
+                }
+                console.log('WebSocket gateway connected!');
             }
-            console.log('WebSocket gateway connected!');
         }
 
 }

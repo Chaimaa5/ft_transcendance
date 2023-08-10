@@ -11,6 +11,7 @@ import { MuteService } from './chat/mute.service';
 import { GameModule } from './game/game.module';
 import { ChatModule } from './chat/chat.module';
 import { GameGateway } from './game/game.gateway';
+import { NotificationsGateway } from './socket/notifications.gateway';
 
 @Module({
   imports: [ScheduleModule.forRoot(),
@@ -21,7 +22,7 @@ import { GameGateway } from './game/game.gateway';
     }), GameModule, ChatModule
   ],
   controllers: [],
-  providers: [GameGateway, ChatGateway, MuteService],
+  providers: [ NotificationsGateway, ChatGateway, MuteService],
 
   })
 export class AppModule {}

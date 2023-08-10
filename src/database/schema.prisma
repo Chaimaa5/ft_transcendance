@@ -124,7 +124,7 @@ model  Game {
 model Notification {
   id          Int @default(autoincrement()) @id 
   type        String
-  status      String
+  status      Boolean
   sender      User        @relation("NotifationSender", fields:  [senderId], references:  [id])
   senderId    String
   receiver    User        @relation("NotifationReceiver", fields:  [receiverId], references:  [id])

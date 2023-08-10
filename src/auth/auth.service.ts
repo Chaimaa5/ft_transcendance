@@ -15,6 +15,7 @@ import * as jwt from 'jsonwebtoken';
 
 @Injectable()
 export class AuthService {
+   
 
    
 
@@ -172,5 +173,14 @@ export class AuthService {
         }
         else
             throw new UnauthorizedException('User  not found')
+    }
+
+    async isEnabled(id: string) {
+        const user = await this.prisma.user.findUnique({
+            where: {id:id}
+        })
+        if(user)
+            return user?.isTwoFacEnabled
+        throw new UnauthorizedException('User Not Found')
     }
 }

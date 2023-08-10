@@ -7,7 +7,7 @@ import { ExtractJwt, Strategy } from "passport-jwt";
 import * as jwt from 'jsonwebtoken';
 
 @Injectable()
-export class JWTStrategy extends PassportStrategy(Strategy, 'jwt'){
+export class LoginStrategy extends PassportStrategy(Strategy, 'auth'){
      constructor(){
         super({
             jwtFromRequest: ExtractJwt.fromExtractors([(request:Request) => {
@@ -20,15 +20,16 @@ export class JWTStrategy extends PassportStrategy(Strategy, 'jwt'){
 
     prisma = new PrismaClient();
     async validate(payload: JwtPayload){
+        let auth = false
         try{
             jwt.verify(payload.token, process.env.JWT_ACCESS_SECRET as jwt.Secret)
             const user = await this.prisma.user.findUnique({
                 where:{id: payload.id,},
             });
-            return{...user} as User;
+            return true
+
         }catch(err){
-            if(err instanceof jwt.TokenExpiredError )
-                throw  new UnauthorizedException('Expired Token Exception');
+            return auth
         }
     }
 }
