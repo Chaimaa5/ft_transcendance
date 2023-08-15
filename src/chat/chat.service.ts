@@ -9,9 +9,11 @@ import { UserService } from 'src/user/user.service';
 
 @Injectable()
 export class ChatService {
+   
 
 
     prisma = new PrismaClient();
+
     constructor(){}
     // user = new UserService;
 
@@ -40,6 +42,29 @@ export class ChatService {
         }
         else
             throw new UnauthorizedException('Password Incorrect')
+    }
+
+    async leave(membershipId: number) {
+        await this.prisma.membership.delete({where: {id: membershipId}})
+    }
+    
+    
+    async unsetAdmin(id: any, membershipId: number) {
+       
+        const membership = await this.prisma.membership.findUnique({where: {id: membershipId}})
+        const owner = await this.prisma.room.findFirst({where:{
+            AND:[
+                {id: membership?.roomId},
+                {ownerId: id}
+            ]
+        }})
+        if(owner){
+            const member = await this.prisma.membership.update({where: {id: membershipId},
+            data: {role: 'member'}})
+            // await this.user.addNotifications(id, member.userId, "Admin", "Set you as administrator")
+        }
+        else
+            throw new UnauthorizedException('User Is Not Owner')
     }
 
     async updateImage(Object: any[]){

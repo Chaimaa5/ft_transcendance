@@ -60,11 +60,18 @@ export class ChatController{
 
    
       //working
-      @Post(':membershipId/setAdmin')
+      @Get('/setAdmin/:membershipId/')
       async SetAdmin(@Req() req: Request, @Param('membershipId') Id: any){
           const user = req.user as User
           const membershipId = parseInt(Id, 10)
           return await this.chat.setAdmin(user.id, membershipId)
+      }
+
+          @Get('/unsetAdmin/:membershipId/')
+      async UnSetAdmin(@Req() req: Request, @Param('membershipId') Id: any){
+          const user = req.user as  User
+          const membershipId = parseInt(Id, 10)
+          return await this.chat.unsetAdmin(user.id, membershipId)
       }
 
     @Delete()
@@ -122,17 +129,25 @@ export class ChatController{
         await this.chat.joinRoom(roomId, user.id)
     }
 
-    @Post('/unmute/:roomId')
+    @Post('/verify/:roomId')
     async VerifyPassword(@Req() req: Request, @Param('roomId') Id: any, @Body('password') password: string){
         const roomId = parseInt(Id, 10)
         return await this.chat.VerifyPassword(roomId, password)
     }
 
-    //check password
-    // set admin
-    // remove admin
-    // leave
-    // kick
+    @Get('leave/:roomId')
+    async LeaveRoom(@Req() req: Request, @Param('roomId') id: string){
+        const roomId = parseInt(id, 10)
+        const user = req.user as User
+        await this.chat.leave(roomId)
+    }
+   
+    // @Get('kick/:membershipId')
+    // async Kick(@Req() req: Request, @Param('membershipId') id: string){
+    //     const roomId = parseInt(id, 10)
+    //     const user = req.user as User
+    //     await this.chat.kick(roomId, user.id)
+    // }
 
 }
 
