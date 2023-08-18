@@ -38,7 +38,12 @@ export class ProfileService {
                     if(user.level){
                         let percentage = parseFloat((user.level % 1).toFixed(2));
                         progress = percentage.toString()
-                        progress = progress.split('.')[1] + "%"
+                        progress = progress.split('.')[1]
+                        if(progress.length == 1)
+                            progress = progress.concat("0%")
+                        else
+                            progress.concat('%')
+                        
                     }
                     else
                         progress = "0%";
@@ -167,11 +172,24 @@ export class ProfileService {
 
     async Badges(username: string) {
         if(username){
-            return await this.prisma.user.findUnique({where:{username : username},
-                select: {
-                    badge: true,
-                }
+            let badges = await this.prisma.user.findUnique({where:{username : username},
+              select: {badge: true}
             });
+            if(badges){
+                let achievements = await Promise.all( badges.badge.map(async(badge) => {
+                    if (badge.Image){
+                        badge.Image = 'http://' + process.env.HOST + ':' + process.env.BPORT + '/api' + badge.Image
+                    }
+                    return {
+                        'id': badge.id,
+                        'Achievement': badge.Achievement,
+                        'Achieved': badge.Achieved,
+                        'Image': badge.Image,
+                    }
+                })
+                );
+                return achievements
+            }
         }
         else
             throw new UnauthorizedException('User  not found')
@@ -210,8 +228,8 @@ export class ProfileService {
             let lossPer = games > 0 ? (losses / games) * 100 : 0;
             let loss  = lossPer.toFixed(2);
             return {
-                win: win,
-                loss: loss,
+                win: parseFloat(win),
+                loss: parseFloat(loss),
             };
         }
         else
@@ -365,7 +383,7 @@ export class ProfileService {
             const user  = await this.prisma.user.findUnique({where: {username: username}});
             const id = user?.id
             //should add the result
-           return await this.prisma.game.findMany({
+           let games =  await this.prisma.game.findMany({
             where: {
                 OR: [
                   { playerId1: id },
@@ -377,17 +395,48 @@ export class ProfileService {
                 player1: {
                     select: {
                         username: true,
+                        avatar: true,
+                    
                     }
                 },
                 player2: {
                     select: {
                         username: true,
+                        avatar: true,
                     }
                 },
             },
             
     
            });
+
+           if(games){
+             let result = await Promise.all( games.map(async(game) => {
+                if (game.player1.avatar){
+                    if(!game.player1.avatar.includes('cdn.intra'))
+                        game.player1.avatar = 'http://' + process.env.HOST + ':' + process.env.BPORT + '/api' + game.player1.avatar
+                }
+                if (game.player2){
+                    if (game.player2.avatar){
+                        if(!game.player2.avatar.includes('cdn.intra'))
+                            game.player2.avatar = 'http://' + process.env.HOST + ':' + process.env.BPORT + '/api' + game.player2.avatar
+                    }
+                    return {
+                        'winner': game.winner,
+                        'player1':{
+                            'avatar': game.player1.avatar,
+                            'username': game.player1.username,
+                        },
+                        'player2':{
+                            'avatar': game.player2.avatar,
+                            'username': game.player2.username,
+                        }
+                    }
+                }
+            })
+            );
+            return result
+        }
         }
         else
             throw new UnauthorizedException('User  not found')

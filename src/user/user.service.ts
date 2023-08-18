@@ -54,23 +54,23 @@ export class UserService {
                         badge: {
                             create: [{
                                 //first win
-                                Achievement: "Beginner's Luck", Achieved: false,
+                                Achievement: "Beginner's Luck", Achieved: false, Image: '/upload/achievments/3.png'
                             },
                             {
                                 //ranked first
-                                Achievement: "Golden Paddle", Achieved: false, 
+                                Achievement: "Golden Paddle", Achieved: false,  Image: '/upload/achievments/1.png'
                             },
                             {
                                 // ranked second
-                                Achievement: "Sharpshooter", Achieved: false, 
+                                Achievement: "Sharpshooter", Achieved: false,  Image: '/upload/achievments/5.png'
                             },
                             {
                                 //ranked third
-                                Achievement: "Backhand Master", Achieved: false, 
+                                Achievement: "Backhand Master", Achieved: false,  Image: '/upload/achievments/4.png'
                             },
                             {
                                 //win against the bot
-                                Achievement: "Worthy Adversary", Achieved: false, 
+                                Achievement: "Worthy Adversary", Achieved: false,  Image: '/upload/achievments/2.png'
                             }
                         ]
                         },
