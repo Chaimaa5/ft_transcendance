@@ -50,7 +50,7 @@ async addGameInvite(senderId : string, receiverId: string, gameId: number){
                 sender: {connect: {id: senderId}},
                 receiver: {connect: {id: receiverId}},
                 status: false,
-                type: 'game',
+                type: 'Game',
                 content: '',
                 gameId: gameId
             },

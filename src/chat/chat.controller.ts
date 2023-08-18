@@ -33,6 +33,7 @@ export class ChatController{
     @UseInterceptors(FileInterceptor('image', Config)) 
     async CreateChannel(@Req() req: Request, @UploadedFile() image: Express.Multer.File, @Body() body: CreateChannel){
         const user = req.user as User
+        console.log('create',body)
         return await this.chat.CreateChannel(user.id, body, image);
     }
 
@@ -60,14 +61,14 @@ export class ChatController{
 
    
       //working
-      @Get('/setAdmin/:membershipId/')
+      @Post('/:membershipId/setAdmin/')
       async SetAdmin(@Req() req: Request, @Param('membershipId') Id: any){
           const user = req.user as User
           const membershipId = parseInt(Id, 10)
           return await this.chat.setAdmin(user.id, membershipId)
       }
 
-          @Get('/unsetAdmin/:membershipId/')
+          @Get('/:membershipId/unsetAdmin/')
       async UnSetAdmin(@Req() req: Request, @Param('membershipId') Id: any){
           const user = req.user as  User
           const membershipId = parseInt(Id, 10)
@@ -88,7 +89,7 @@ export class ChatController{
         return await this.chat.GetMessages(user.id, roomId)
     }
 
-    @Post('/ban/:membershpiId')
+    @Post('/ban/:membershipId')
     async BanMember(@Req() req: Request, @Param('membershipId') Id: any){
         const user = req.user as User
         const membershipId = parseInt(Id, 10)
@@ -116,10 +117,10 @@ export class ChatController{
     }
 
     @Get('/roomMembers/:roomId')
-    async GetRoomMembers(@Param('roomId') id: string){
-
+    async GetRoomMembers(@Req() req: Request, @Param('roomId') id: string){
+        const user = req.user as User
         const roomId = parseInt(id)
-        return await this.chat.GetRoomMembers(roomId)
+        return await this.chat.GetRoomMembers(roomId, user.id)
     }
 
     @Get('joinRoom/:roomId')
@@ -129,17 +130,20 @@ export class ChatController{
         await this.chat.joinRoom(roomId, user.id)
     }
 
-    @Post('/verify/:roomId')
-    async VerifyPassword(@Req() req: Request, @Param('roomId') Id: any, @Body('password') password: string){
+    @Post('/joinProtected/:roomId')
+    async JoinProtectedChannel(@Req() req: Request, @Param('roomId') Id: any, @Body('password') password: string){
         const roomId = parseInt(Id, 10)
-        return await this.chat.VerifyPassword(roomId, password)
+        const user = req.user as User
+       const verified = await this.chat.VerifyPassword(roomId, password)
+       if(verified)
+            await this.chat.createMembership(roomId, user.id)
     }
 
-    @Get('leave/:roomId')
-    async LeaveRoom(@Req() req: Request, @Param('roomId') id: string){
-        const roomId = parseInt(id, 10)
-        const user = req.user as User
-        await this.chat.leave(roomId)
+    @Get('leave/:membershipId')
+    async LeaveRoom(@Req() req: Request, @Param('membershipId') id: string){
+        const membershipId = parseInt(id, 10)
+        const user = req.user as User;
+        await this.chat.leaveChannel(membershipId);
     }
    
     // @Get('kick/:membershipId')

@@ -3,51 +3,25 @@ import { Membership, PrismaClient } from '@prisma/client';
 import { Response } from 'express';
 import { NOTFOUND } from 'dns';
 import { AddMember, CreateChannel, CreateRoom, UpdateChannel } from './dto/Chat.dto';
-import * as crypto from 'crypto';
+import * as bcrypt from 'bcrypt';
+import {promisify} from 'util';
 import { isHexColor } from 'class-validator';
 import { UserService } from 'src/user/user.service';
+import { hasSubscribers } from 'diagnostics_channel';
 
 @Injectable()
 export class ChatService {
+ 
    
 
 
     prisma = new PrismaClient();
-
+    secret = "secret togenerate for bcrypt";
+ 
     constructor(){}
-    // user = new UserService;
-
-    encryptPassword(password: string) {
-        if(password){
-            const secret = process.env.JWT_REFRESH_SECRET as string
-            const iv = crypto.randomBytes(16);
-            const cipher = crypto.createCipheriv('aes-256-cbc', secret, iv);
-            let encrypted = cipher.update(JSON.stringify(password), 'utf8', 'hex');
-            encrypted += cipher.final('hex');
-            return encrypted;
-        }
-        else
-            throw new UnauthorizedException('Password is NULL')
-      }
 
 
-      decryptPassword(encryptedPassword: string) {
-        if(encryptedPassword){
-            const secret = process.env.JWT_REFRESH_SECRET as string
-            const iv = crypto.randomBytes(16);
-            const decipher = crypto.createCipheriv('aes-256-cbc', secret, iv);
-            let decrypted = decipher.update(encryptedPassword, 'hex', 'utf8');
-            decrypted += decipher.final('utf8');
-            return JSON.parse(decrypted);
-        }
-        else
-            throw new UnauthorizedException('Password Incorrect')
-    }
 
-    async leave(membershipId: number) {
-        await this.prisma.membership.delete({where: {id: membershipId}})
-    }
-    
     
     async unsetAdmin(id: any, membershipId: number) {
        
@@ -73,7 +47,8 @@ export class ChatService {
                   if (member.image)
                   {
                       if (member.image){
-                          member.image = 'http://' + process.env.HOST + ':3000/api' + member.image
+                        if(!member.image.includes('cdn.intra'))
+                            member.image = 'http://' + process.env.HOST + ':3000/api' + member.image
                       }
                   }
               }
@@ -87,11 +62,20 @@ export class ChatService {
             where: {
                 AND:[
                     {isChannel: false},
-                    {type: 'private'}
+                    {type: 'private'},
+                    {
+                        membership: {
+                            some: {
+                                userId: {
+                                    in: [id]
+                                }
+                            }
+                        },
+                        
+                    }
                 ]},
             include: {
                 membership: {
-                    where: {userId: id},
                     select: {
                         id: true, 
                         userId: true,
@@ -109,31 +93,37 @@ export class ChatService {
                 }
             }
         })
-
-        let modifiedRooms =  rooms.map((room) =>{
+        let modifiedRooms =  Promise.all( rooms.map(async (room) =>{
             let message = ''
             if (room){
-                for (const member of room.membership) {
-                    if(member.roomImage){
-                        if(!member.roomImage.includes('cdn.intra')){
-                            room.image = 'http://' + process.env.HOST + ':3000/api' + member.roomImage;
+                let members = room.membership
+                for (const member of members) {
+                    if(member.userId != id){
+                        const user = await this.prisma.user.findUnique({where: {id: member.userId}})
+                        if(user){
+                            if(user.avatar){
+                                if(!user.avatar.includes('cdn.intra')){
+                                    room.image = 'http://' + process.env.HOST + ':3000/api' + user.avatar;
+                                }
+                                else
+                                    room.image = user.avatar;
+                            }
+                            room.name = user.username as string;
                         }
-                        else
-                            room.image = member.roomImage;
                     }
-                    room.name = member.roomName as string;
-                  }
-                  if(room.message[0])
+                }
+                if(room.message[0])
                     message = room.message[0].content;
             }
-            return  {'id': room.id,
-            'name': room.name,
-            'type': room.type,
-            'image': room.image,
-            'ownerId': room.ownerId,
-            'message': message
-           }
-        })
+            return  {
+                'id': room.id,
+                'name': room.name,
+                'type': room.type,
+                'image': room.image,
+                'ownerId': room.ownerId,
+                'message': message
+            }
+        }))
         return modifiedRooms
 
     }
@@ -156,7 +146,7 @@ export class ChatService {
         const room = await this.prisma.room.create({
             data: {
                 name: name ,
-                image: 'imagePath',
+                image: '/upload/avatar.png',
                 type: 'private',
                 ownerId: ownerId,
                 isChannel: false,
@@ -231,22 +221,19 @@ export class ChatService {
             imagePath = "/upload/" + image.filename
         else
             imagePath = "/upload/avatar.png";
-        let EncryptedPaswword = ''
+        if(data.type === 'protected'){
 
-        console.log(imagePath)
-        if(data.type === 'protected')
-            EncryptedPaswword = this.encryptPassword(data.password as string)
-        const room = await this.prisma.room.create({
-            data: {
-                name: data.name as string,
-                image: imagePath,
-                type: data.type as string,
-                ownerId: ownerId,
-                password: EncryptedPaswword,
-                isChannel: true,
-            }
-        })
-
+            const EncryptedPaswword =  await bcrypt.hash(data.password as string, 10);
+            const room = await this.prisma.room.create({
+                data: {
+                    name: data.name as string,
+                    image: imagePath,
+                    type: data.type as string,
+                    ownerId: ownerId,
+                    password: EncryptedPaswword,
+                    isChannel: true,
+                }
+            })
             const createMember = await this.prisma.membership.create({
                 data: {
                     roomId: room.id,
@@ -256,9 +243,38 @@ export class ChatService {
                     isMuted: false
                 }
             })
+        }
+       else{
+
+            const EncryptedPaswword =  await bcrypt.hash(data.password as string, 10);
+            const room = await this.prisma.room.create({
+                data: {
+                    name: data.name as string,
+                    image: imagePath,
+                    type: data.type as string,
+                    ownerId: ownerId,
+                    password: '',
+                    isChannel: true,
+                }
+            })
+            const createMember = await this.prisma.membership.create({
+                data: {
+                    roomId: room.id,
+                    userId: ownerId as string,
+                    role: 'owner',
+                    isBanned: false,
+                    isMuted: false
+                }
+            })
+       }
+
      
 
 
+    }
+    async hashPassword(password: string){
+        const hashed =  await bcrypt.hash(password, 10);
+        return hashed;
     }
     
     
@@ -277,28 +293,59 @@ export class ChatService {
     }
 
     async leaveChannel(membershipId: number){
+
+        // this.prisma.$transaction(async (prisma) => {
+
+        // })
         const membership = await this.prisma.membership.findUnique({where: {id: membershipId}})
-        this.deleteMembership(membershipId)
-        if(membership?.role === 'owner')
-        {
-            //set owner
-            const newOwner = await this.prisma.membership.findFirst({
-                where: {roomId: membership.roomId}
-            })
+        if(membership){
+            if(membership?.role === 'owner')
+            {
+                let count = await this.prisma.membership.count({
+                    where: {roomId: membership.roomId}
+                })
+                console.log('count: ', count)
+                if(count > 1){
+                    console.log('owner')
 
-            if (newOwner){
-                await this.prisma.membership.update({
-                    where: {id: newOwner.id},
-                    data: {
-                        role: 'owner'
+                    //set owner
+                    const newOwner = await this.prisma.membership.findFirst({
+                        where: {
+                            AND:[
+                                {roomId: membership.roomId},
+                                {userId:{
+                                    notIn: [membership.userId]
+                                }}
+                            ]    
+                        }
+                    })
+                
+                    if (newOwner){
+                        await this.prisma.membership.update({
+                            where: {id: newOwner.id},
+                            data: {
+                                role: 'owner'
+                            }
+                        })
+                    
+                        await this.prisma.room.update({
+                            where: {id: membership.roomId},
+                            data: {ownerId: newOwner.userId}
+                        })
+                        // await this.user.addNotifications(membership.userId, newOwner.userId, "Owner", "Set you as owner")
                     }
-                })
+                    this.deleteMessages(membership.roomId, membership.userId)
+                    this.deleteMembership(membershipId);
+                }
+                else{
+                    this.deleteMembership(membershipId)
+                    this.deleteRoom(membership.roomId);
+                }
 
-                await this.prisma.room.update({
-                    where: {id: membership.roomId},
-                    data: {ownerId: newOwner.userId}
-                })
-                // await this.user.addNotifications(membership.userId, newOwner.userId, "Owner", "Set you as owner")
+            }
+            else{
+                this.deleteMessages(membership.roomId, membership.userId)
+                this.deleteMembership(membershipId)
             }
         }
         
@@ -324,12 +371,12 @@ export class ChatService {
 
     async changePrivacy(roomId: number, id: string, type: string, pw: string){
         if (type === 'protected'){
-            let password = this.encryptPassword(pw)  
+            // let password = this.hash(pw)  
             await this.prisma.room.update({
                 where: {id: roomId},
                 data: {
                     type: type,
-                    password: password
+                    // password: password
                 },
 
             })
@@ -348,7 +395,7 @@ export class ChatService {
         const {name, type, password} = room
         const imagePath = "/upload/" + image.filename
         if (password){
-            let passwordEncrypted = this.encryptPassword(password as string)  
+            let passwordEncrypted =  await bcrypt.hash(password as string, 10);
             await this.prisma.room.update({where: {id: room.roomId},
                 data: {
                     name: room.name as string,
@@ -363,7 +410,7 @@ export class ChatService {
 
     
     async SetPassword(roomId: number, pw: string){
-        const passwordEncrypted =  this.encryptPassword(pw)
+        const passwordEncrypted =   await bcrypt.hash(pw , 10);
         await this.prisma.room.update({
             where: {id: roomId},
             data: {
@@ -379,6 +426,7 @@ export class ChatService {
     }
 
     async deleteRoom(id: number){
+        await this.prisma.message.deleteMany({where: {roomId: id}})
         await this.prisma.room.delete({where: {id: id}})
     }
 
@@ -512,7 +560,8 @@ export class ChatService {
         let  channelsModified = await Promise.all(
         channels.map(async(channel) => {
             if (channel.image){
-                channel.image = 'http://' + process.env.HOST + ':3000/api' + channel.image
+                if(!channel.image.includes('cdn.intra'))
+                    channel.image = 'http://' + process.env.HOST + ':3000/api' + channel.image
             }
                 let count = await this.prisma.membership.count({
                     where: {roomId: channel.id}
@@ -554,7 +603,8 @@ export class ChatService {
         const channelss = await Promise.all(
         channels.map(async(channel) => {
             if (channel.image){
-                channel.image = 'http://' + process.env.HOST + ':3000/api' + channel.image
+                if(!channel.image.includes('cnd.intra'))
+                    channel.image = 'http://' + process.env.HOST + ':3000/api' + channel.image
             }
                 let count = await this.prisma.membership.count({
                     where: {roomId: channel.id}
@@ -599,10 +649,13 @@ export class ChatService {
 
             let user = await this.prisma.user.findUnique({where: {id: userId}})
             if (user?.avatar){
-                user.avatar = 'http://' + process.env.HOST + ':3000/api' + user.avatar
+                if(!user.avatar.includes('cdn.intra'))
+                    user.avatar = 'http://' + process.env.HOST + ':3000/api' + user.avatar
             }
             return {
                 'roomId': message.roomId,
+                'type': room.type,
+                'ischannel': room.isChannel,
                 'userId': message.userId,
                 'content': message.content,
                 'avatar': user?.avatar,
@@ -636,8 +689,28 @@ export class ChatService {
                 }
             }
             if (roomData.image){
-                if(!roomData.image.includes('cdn.intra'))
-                    roomData.image = 'http://' + process.env.HOST + ':3000/api' + roomData.image                
+                if(!roomData.isChannel){
+                let members = roomData.membership
+                for (const member of members) {
+                    if(member.userId != id){
+                        const user = await this.prisma.user.findUnique({where: {id: member.userId}})
+                        if(user){
+                            if(user.avatar){
+                                if(!user.avatar.includes('cdn.intra')){
+                                    roomData.image = 'http://' + process.env.HOST + ':3000/api' + user.avatar;
+                                }
+                                else
+                                    roomData.image = user.avatar;
+                            }
+                            roomData.name = user.username as string;
+                        }
+                    }
+                    }
+                }
+                else{
+                    if(!roomData.image.includes('cdn.intra'))
+                        roomData.image = 'http://' + process.env.HOST + ':3000/api' + roomData.image                
+                }
             }
             let message = await this.prisma.message.findMany({
                 where: {roomId: roomId},
@@ -659,7 +732,8 @@ export class ChatService {
             let messages = await Promise.all(
             message.map(async(message) => {
                 if (message.user.avatar){
-                    message.user.avatar = 'http://' + process.env.HOST + ':3000/api' + message.user.avatar
+                    if(!message.user.avatar.includes('cdn.intra'))
+                        message.user.avatar = 'http://' + process.env.HOST + ':3000/api' + message.user.avatar
                 }
                    
                     return {'id': message.user.id,
@@ -720,7 +794,12 @@ export class ChatService {
     }
   
 
-    async GetRoomMembers(roomId: number) {
+    async GetRoomMembers(roomId: number, userId: string) {
+        let isFriend = false;
+        let isSender = false;
+        let isReceiver = false;
+        let isBlocked = false;
+        let DMroomId = 0 ;
         const member = await this.prisma.membership.findMany({
             where: {roomId: roomId},
             select:{
@@ -737,13 +816,55 @@ export class ChatService {
                 }
             }
            })
-
            let members = await Promise.all(
             member.map(async(member) => {
+                const ownerFriend =  await this.prisma.friendship.findFirst({
+                    where:{
+                            OR: [
+                              { senderId: member.user.id, receiverId: userId } ,
+                                { senderId: userId, receiverId: member.user.id } 
+                            ]
+                    },
+                    select: {
+                        id: true,
+                        receiverId: true,
+                        senderId: true,
+                        status: true
+                    }
+                });
+                if (ownerFriend?.status.includes('blocked'))
+                    isBlocked = true;
+                else if (ownerFriend?.status.includes('pending'))
+                {
+                    if (member.user.id == ownerFriend.senderId)
+                        isSender = true;
+                    else
+                        isReceiver = true;
+                }
+                
                 if (member.user.avatar){
+                    if(!member.user.avatar.includes('cdn.intra'))
                     member.user.avatar = 'http://' + process.env.HOST + ':3000/api' + member.user.avatar
                 }
-                   
+                if(ownerFriend?.status.includes('accepted')){
+                    isFriend = true;
+                    const room = await this.prisma.room.findFirst({where:{
+                        AND: [
+
+                           { membership: {
+                                some: {
+                                    userId: {
+                                        in: [userId, member.user.id]
+                                    }
+                                }
+                            },},
+                            {isChannel: false}
+                        ]
+
+                    }})
+                    if(room)
+                        DMroomId = room.id
+                }
                     return {
                         'membershipId': member.id,
                         'userId': member.user.id,
@@ -752,10 +873,14 @@ export class ChatService {
                         'role': member.role,
                         'isBanned': member.isBanned,
                         'isMuted': member.isMuted,
+                        'isFriend': isFriend,
+                        'isSender': isSender,
+                        'isReceiver': isReceiver,
+                        'isBlocked': isBlocked,
+                        'DmroomId': DMroomId
                     }
                 })
-    
-            );
+                );
             return members
     }
 
@@ -794,16 +919,29 @@ export class ChatService {
         const room = await this.prisma.room.findUnique({where: {id: roomId}})
         if(room){
             if(room.password){
-                const decrypted = await this.decryptPassword(room.password)
-                if(decrypted === password)
-                    return true
-                return false
+                const match = await bcrypt.compare(password, room.password)
+                if(match)
+                    return true;
+                else
+                    return false;
+
             }
             return false
         }
         else
             throw new UnauthorizedException('Room does Not Exist')
     }
-    
 
+
+    async createMembership(roomId: number, id: string) {
+        await this.prisma.membership.create({
+            data: {
+                roomId: roomId,
+                userId: id,
+                role: 'member',
+                isBanned: false,
+                isMuted: false
+            }
+        });
+    }
 }

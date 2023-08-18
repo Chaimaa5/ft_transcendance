@@ -11,6 +11,7 @@ model Achievement{
   id Int @default(autoincrement())@id
   Achievement String
   Achieved    Boolean
+  Image       String
   userId String
   user User? @relation("Achieved", fields: [userId], references: [id])
 }

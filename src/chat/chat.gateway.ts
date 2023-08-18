@@ -120,26 +120,26 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect{
             const rcvData = await this.chatService.storeMessage(room, userId, message);
             const isMuted = await this.chatService.checkMute(room, userId)
             if(!isMuted ){
-                // const Blocked = this.userService.getBlocked(userId);
                 // this.server.to(roomId).except(client.id).emit('message', message);
                 // console.log(this.rooms)
                 if(rcvData){
-                    this.emitMessage(rcvData, room)
+                    this.emitMessage(rcvData, room, userId)
                     // this.server.to(client.id).emit('receiveMessage',rcvData);
                 }
             }
         }
     }
     
-    emitMessage(rcvData: any, roomId: number) {
-        const ChatRoom = this.rooms.get(roomId)
+    async emitMessage(rcvData: any, roomId: number, userId: string) {
+        let ChatRoom = this.rooms.get(roomId)
         if(ChatRoom ){
+                // let Blocked = await this.userService.getBlocked(userId);
                 // ChatRoom = ChatRoom.filter(ChatRoom => {
                 //     const id = ChatRoom.data.payload.id;
-                //     return !Blocked.has(id) 
+                //     return  !Blocked.some(user => user.id === id);
                 // })
                 ChatRoom.forEach(socket =>{
-                    console.log('id:', socket.data.payload.id)
+                    // console.log('id:', socket.data.payload.username)
                     this.server.to(socket.id).emit('receiveMessage', rcvData)
                 })
             }

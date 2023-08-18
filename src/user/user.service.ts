@@ -53,13 +53,24 @@ export class UserService {
                         level: 0,
                         badge: {
                             create: [{
-                                Achievement: "x", Achieved: false,
+                                //first win
+                                Achievement: "Beginner's Luck", Achieved: false,
                             },
                             {
-                                Achievement: "y", Achieved: false,
+                                //ranked first
+                                Achievement: "Golden Paddle", Achieved: false, 
                             },
                             {
-                                Achievement: "z", Achieved: false,
+                                // ranked second
+                                Achievement: "Sharpshooter", Achieved: false, 
+                            },
+                            {
+                                //ranked third
+                                Achievement: "Backhand Master", Achieved: false, 
+                            },
+                            {
+                                //win against the bot
+                                Achievement: "Worthy Adversary", Achieved: false, 
                             }
                         ]
                         },
@@ -259,6 +270,35 @@ export class UserService {
         {
             const exist = await this.FindbyID(Id)
             if (exist){
+               
+
+                const room = await this.prisma.room.findFirst({
+                    where:{
+                        AND: [
+                            {membership: {
+                                some: {
+                                    userId: {
+                                        in: [id, Id]
+                                    }
+                                }
+                            },},
+                            {isChannel: false}
+                        ]
+                    },
+                    include: {
+                        membership: true}
+                })
+                if(room){
+                    await this.chatService.deleteMessages(room.id, id)
+                    await this.chatService.deleteMessages(room.id, Id)
+                    if(room.membership){
+                        for(const membership of room.membership){
+                            await this.chatService.deleteMembership(membership.id)
+                        }
+                    }
+                    await this.prisma.room.delete({where: {id: room.id}})
+
+                }
                 await this.prisma.friendship.deleteMany({
                     where: {
                         OR: [
@@ -535,9 +575,12 @@ export class UserService {
     }
 
    async GetNotifications(id : string){
-    if(id){
+        if(id){
         const res = await this.prisma.notification.findMany({
             where: {receiverId: id },
+            orderBy: {
+                createdAt: 'asc',
+            },
             select:{
                 id: true,
                 type: true,
