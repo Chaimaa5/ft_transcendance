@@ -17,6 +17,10 @@ export class AuthController {
     @UseGuards(AuthGuard('42'))
     handleLogin(){}
 
+    @Get('/login/google')
+    @UseGuards(AuthGuard('google'))
+    handleGoogleLogin(){}
+
  
     @Get('/auth')
     @UseGuards(AuthGuard('42'))
@@ -32,6 +36,23 @@ export class AuthController {
         else
             return res.redirect('http://localhost:8000/setup');
     }
+
+     
+    @Get('/google')
+    @UseGuards(AuthGuard('google'))
+    async handleGoogleAuth(@Req() req: Request, @Res() res: Response){
+        const check = await this.authservice.signIn(res, req);
+        if (check == 1){
+            const user = req.user as User
+            const isTwoFA = await this.authservice.isEnabled(user.id)
+            if(isTwoFA)
+                return res.redirect('http://localhost:8000/tfa');
+            return res.redirect('http://localhost:8000/home');
+        }
+        else
+            return res.redirect('http://localhost:8000/setup');
+    }
+
 
     @Get('/refresh')
     @UseGuards(AuthGuard('Refresh'))
