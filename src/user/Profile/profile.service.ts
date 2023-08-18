@@ -385,10 +385,13 @@ export class ProfileService {
             //should add the result
            let games =  await this.prisma.game.findMany({
             where: {
-                OR: [
-                  { playerId1: id },
-                  { playerId2: id }
-                ],
+                AND: [
+                    {OR: [
+                      { playerId1: id },
+                      { playerId2: id }
+                    ],},
+                    {mode: {not: 'training'}} 
+                ]
             },
             select: {
                 winner: true,

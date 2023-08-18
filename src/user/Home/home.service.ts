@@ -96,10 +96,15 @@ export class HomeService {
           if (nav)
           {
             if (nav.level){
-              let percentage = parseFloat((nav?.level % 1).toFixed(2));
-              progress = percentage.toString()
-              progress = progress.split('.')[1] + "%"
+                let percentage = parseFloat((nav.level % 1).toFixed(2));
+                progress = percentage.toString()
+                progress = progress.split('.')[1]
+                if(progress.length == 1)
+                    progress = progress.concat("0")
+                progress = progress.concat('%')
             }
+            else
+                progress = "0%";
             if (!nav.avatar.includes('cdn.intra')){
              nav.avatar = 'http://' + process.env.HOST + ':3000/api' + nav.avatar
           }
