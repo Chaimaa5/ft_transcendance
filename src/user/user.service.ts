@@ -344,7 +344,6 @@ export class UserService {
 
     async blockFriend(id : string, Id: string){
         if (id){
-            console.log('block')
             const exist = await this.FindbyID(Id)
             if (exist){
                 const friendship = await this.prisma.friendship.findFirst({where:{
@@ -354,6 +353,28 @@ export class UserService {
                     ],
                 }})
                 if(friendship){
+                    const room = await this.prisma.room.findFirst({
+                        where:{
+                            AND: [
+                                {membership: {
+                                    some: {
+                                        userId: {
+                                            in: [id, Id]
+                                        }
+                                    }
+                                },},
+                                {isChannel: false}
+                            ]
+                        },
+                        include: {
+                            membership: true}
+                    })
+                    if(room){
+                        await this.prisma.membership.updateMany({where: {roomId: room.id},
+                        data:{
+                            isBanned: true
+                        }})
+                    }
                     await this.prisma.friendship.updateMany({
                         where: {
                             OR: [
@@ -369,7 +390,6 @@ export class UserService {
                     });
                 }
                 else{
-                    console.log('here')
                     await this.prisma.friendship.create({
                         data: {
                             senderId: id,

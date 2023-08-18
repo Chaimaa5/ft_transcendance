@@ -54,7 +54,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
                     this.server.to(client.id).emit('notifications', notifications);
                     // this.server.emit('connectionSuccess', { message: 'Connected successfully!' });
                 }
-                console.log('WebSocket gateway connected!');
+                console.log('WebSocket gateway connected!', token );
             }
         }
 

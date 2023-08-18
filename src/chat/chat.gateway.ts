@@ -119,13 +119,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect{
         if(message){
             const rcvData = await this.chatService.storeMessage(room, userId, message);
             const isMuted = await this.chatService.checkMute(room, userId)
-            if(!isMuted ){
-                // this.server.to(roomId).except(client.id).emit('message', message);
-                // console.log(this.rooms)
-                if(rcvData){
+            const isBanned = await this.chatService.checkBan(room, userId)
+            if(!isMuted && !isBanned){
+                if(rcvData)
                     this.emitMessage(rcvData, room, userId)
-                    // this.server.to(client.id).emit('receiveMessage',rcvData);
-                }
             }
         }
     }
@@ -133,13 +130,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect{
     async emitMessage(rcvData: any, roomId: number, userId: string) {
         let ChatRoom = this.rooms.get(roomId)
         if(ChatRoom ){
-                // let Blocked = await this.userService.getBlocked(userId);
-                // ChatRoom = ChatRoom.filter(ChatRoom => {
-                //     const id = ChatRoom.data.payload.id;
-                //     return  !Blocked.some(user => user.id === id);
-                // })
+                let Blocked = await this.userService.getBlockedUsers(userId);
+                ChatRoom = ChatRoom.filter(ChatRoom => {
+                    const id = ChatRoom.data.payload.id;
+                    return  !Blocked.some(user => user.id === id);
+                })
                 ChatRoom.forEach(socket =>{
-                    // console.log('id:', socket.data.payload.username)
                     this.server.to(socket.id).emit('receiveMessage', rcvData)
                 })
             }

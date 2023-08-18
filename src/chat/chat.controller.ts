@@ -80,6 +80,7 @@ export class ChatController{
         const user = req.user as User
         const roomId = parseInt(Id, 10)
         return await this.chat.DeleteChannel(user.id, roomId)
+
     }
 
     @Get('/message/:roomId')
@@ -95,7 +96,6 @@ export class ChatController{
         const membershipId = parseInt(Id, 10)
         return await this.chat.BanUpdate(user.id, membershipId, true)
     }
-
     @Post('/mute/:membershipId')
     async MuteMember(@Req() req: Request, @Param('membershipId') Id: any, @Body() duration: string){
         const user = req.user as User

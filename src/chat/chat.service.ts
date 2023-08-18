@@ -21,7 +21,6 @@ export class ChatService {
     constructor(){}
 
 
-
     
     async unsetAdmin(id: any, membershipId: number) {
        
@@ -68,7 +67,8 @@ export class ChatService {
                             some: {
                                 userId: {
                                     in: [id]
-                                }
+                                },
+                                isBanned: false
                             }
                         },
                         
@@ -304,7 +304,6 @@ export class ChatService {
                 let count = await this.prisma.membership.count({
                     where: {roomId: membership.roomId}
                 })
-                console.log('count: ', count)
                 if(count > 1){
                     console.log('owner')
 
@@ -556,7 +555,6 @@ export class ChatService {
                 ownerId: true,
             }
         })
-
         let  channelsModified = await Promise.all(
         channels.map(async(channel) => {
             if (channel.image){
@@ -565,7 +563,7 @@ export class ChatService {
             }
                 let count = await this.prisma.membership.count({
                     where: {roomId: channel.id}
-                })
+                }) 
                 return {'id': channel.id,
                         'name': channel.name,
                         'type': channel.type,
@@ -583,11 +581,16 @@ export class ChatService {
     async GetJoinedChannels(id: string){
         let channels = await this.prisma.room.findMany({
             where: {
-                membership: {
-                    some: {userId: id}
-                },
                 AND: [
                     {isChannel: true},
+                    {membership: {
+                        some: {
+                            userId: {
+                                in: [id]
+                            },
+                            isBanned: false
+                        }
+                    },}
                 ]
             },
             select:{
@@ -664,6 +667,40 @@ export class ChatService {
             // await this.user.addNotifications()
         }
     }
+    async getBlocked(id : string){
+        if (id){
+            const blockedFriendships = await this.prisma.friendship.findMany({where: {
+                AND:[
+                    // {blockerId: id},
+                    {status: 'blocked'},
+                ]},
+                select:{
+                    sender: {
+                        select: {
+                            id: true,
+                            username: true,
+                            avatar: true,
+                        }
+                    },
+                    receiver: {
+                        select: {
+                            id: true,
+                            username: true,
+                            avatar: true,
+                        }
+                    },
+                    blockerId: true,
+                    receiverId: true,
+                    senderId: true
+                }
+            });
+            return blockedFriendships.map((friendship) => {
+                return friendship.senderId === id ? friendship.receiver : friendship.sender;
+            });
+        }   
+        else
+            throw new UnauthorizedException('User  not found')
+    }
 
     async GetMessages(id: string, roomId: number) {
         const roomData = await this.prisma.room.findUnique({where: {id: roomId},
@@ -728,7 +765,11 @@ export class ChatService {
                     content: true,
                 }
            })
-    
+           let Blocked = await this.getBlocked(id);
+           message = message.filter(message => {
+            const id = message.user.id;
+            return  !Blocked.some(user => user.id === id);
+        })
             let messages = await Promise.all(
             message.map(async(message) => {
                 if (message.user.avatar){
@@ -800,8 +841,13 @@ export class ChatService {
         let isReceiver = false;
         let isBlocked = false;
         let DMroomId = 0 ;
-        const member = await this.prisma.membership.findMany({
-            where: {roomId: roomId},
+        let member = await this.prisma.membership.findMany({
+            where: {
+                AND: [
+                        {roomId: roomId},
+                        {isBanned: false}
+                    ]
+            },
             select:{
                 id: true,
                 role: true,
@@ -816,6 +862,13 @@ export class ChatService {
                 }
             }
            })
+
+           let Blocked = await this.getBlocked(userId);
+           member = member.filter(member => {
+            const id = member.user.id;
+            return  !Blocked.some(user => user.id === id);
+        })
+
            let members = await Promise.all(
             member.map(async(member) => {
                 const ownerFriend =  await this.prisma.friendship.findFirst({
