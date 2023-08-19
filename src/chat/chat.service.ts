@@ -141,57 +141,55 @@ export class ChatService {
 
     async CreateRoom(ownerId: string, memberId: string, name: string) {
         try{
-        const roomCheck = await this.prisma.room.findFirst({
-            where: {
-                membership: {
-                    some: {
-                        userId: {
-                            in: [ownerId, memberId]
+            const roomCheck = await this.prisma.room.findFirst({
+                where: {
+                    membership: {
+                        some: {
+                            userId: {
+                                in: [ownerId, memberId]
+                            }
                         }
-                    }
-                },
-                isChannel: true
-            }
-        })
-        const room = await this.prisma.room.create({
-            data: {
-                name: name ,
-                image: '/upload/avatar.png',
-                type: 'private',
-                ownerId: ownerId,
-                isChannel: false,
-
-            }
-        })
-        const member1 = await this.prisma.user.findUnique({where: {id: ownerId}})
-        const member2 = await this.prisma.user.findUnique({where: {id: memberId}})
-        if(member1 && member2){
-            await this.prisma.membership.createMany({
-                data: [
-                    {
-                        roomId: room.id,
-                        userId: ownerId,
-                        role: 'owner',
-                        isBanned: false,
-                        roomImage: member2.avatar,
-                        roomName: member2.username,
-                        isMuted: false
                     },
-                    {
-                        roomId: room.id,
-                        userId: memberId,
-                        role: 'owner',
-                        roomImage: member1.avatar,
-                        roomName: member1.username,
-                        isBanned: false,
-                        isMuted: false
-                    }
-                 ]
+                    isChannel: true
+                }
             })
-        } 
-        }catch(e){throw new HttpException('Undefined Parameters', HttpStatus.BAD_REQUEST) }
+            const room = await this.prisma.room.create({
+                data: {
+                    name: name ,
+                    image: '/upload/avatar.png',
+                    type: 'private',
+                    ownerId: ownerId,
+                    isChannel: false,
 
-    
+                }
+            })
+            const member1 = await this.prisma.user.findUnique({where: {id: ownerId}})
+            const member2 = await this.prisma.user.findUnique({where: {id: memberId}})
+            if(member1 && member2){
+                await this.prisma.membership.createMany({
+                    data: [
+                        {
+                            roomId: room.id,
+                            userId: ownerId,
+                            role: 'owner',
+                            isBanned: false,
+                            roomImage: member2.avatar,
+                            roomName: member2.username,
+                            isMuted: false
+                        },
+                        {
+                            roomId: room.id,
+                            userId: memberId,
+                            role: 'owner',
+                            roomImage: member1.avatar,
+                            roomName: member1.username,
+                            isBanned: false,
+                            isMuted: false
+                        }
+                     ]
+                })
+            } 
+        }catch(e){throw new HttpException('Undefined Parameters', HttpStatus.BAD_REQUEST) }
     }
 
     async AddMember(id: string, data: AddMember) {
@@ -234,7 +232,9 @@ export class ChatService {
 
     async CreateChannel(ownerId: string, data: CreateChannel, image: Express.Multer.File) {
         try{
-
+            const nameCheck = await this.prisma.room.findFirst({where: {name: data.name as string}})
+            if(nameCheck)
+                return false;
             let  imagePath = '';
             if(image)
                 imagePath = "/upload/" + image.filename

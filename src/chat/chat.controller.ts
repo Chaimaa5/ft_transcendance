@@ -35,7 +35,6 @@ export class ChatController{
     @UseInterceptors(FileInterceptor('image', Config)) 
     async CreateChannel(@Req() req: Request, @UploadedFile() image: Express.Multer.File, @Body() body: CreateChannel){
         const user = req.user as User
-        console.log('create',body)
         return await this.chat.CreateChannel(user.id, body, image);
     }
 
