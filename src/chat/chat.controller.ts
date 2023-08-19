@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, OnApplicationShutdown, Param, Patch, Post, Put, Req, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpException, HttpStatus, OnApplicationShutdown, Param, Patch, Post, Put, Req, Res, UploadedFile, UseFilters, UseGuards, UseInterceptors } from '@nestjs/common';
 import { Request, Response} from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { User } from '@prisma/client';
@@ -7,11 +7,13 @@ import { ChatService } from './chat.service';
 import { AddMember, CreateChannel, CreateRoom, UpdateChannel } from './dto/Chat.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Config } from 'src/user/multer.middlewear';
+import { HttpExceptionFilter } from 'src/auth/exception.filter';
 
 
 
 @Controller('chat')
 @ApiTags('chat')
+@UseFilters(HttpExceptionFilter)
 @UseGuards(AuthGuard('jwt'))
 export class ChatController{
     constructor(private readonly chat: ChatService){}

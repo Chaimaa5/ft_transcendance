@@ -1,4 +1,4 @@
-import { Controller, Get,  Post, UseGuards,  Res, Req, Headers, Body, ValidationPipe} from '@nestjs/common';
+import { Controller, Get,  Post, UseGuards,  Res, Req, Headers, Body, ValidationPipe, UseFilters} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { Request, Response } from 'express';
@@ -6,11 +6,12 @@ import { ApiTags } from '@nestjs/swagger';
 import * as qrcode from 'qrcode';
 import { User } from '@prisma/client';
 import { TFA } from './dto/TFA.dto';
+import { HttpExceptionFilter } from './exception.filter';
 
 
 @Controller('')
 @ApiTags('auth')
-
+@UseFilters(HttpExceptionFilter)
 export class AuthController {
     constructor(private readonly authservice: AuthService){}
     @Get('/login')
@@ -73,7 +74,7 @@ export class AuthController {
     @UseGuards(AuthGuard('jwt'))
     async HandleTFA(@Req() req: Request, @Res() res: Response){
         const user : User = req.user as User;
-        const qr = await this.authservice.generateQRCode(user.id);
+        const qr = await this.authservice.generateQRCode(user);
         res.setHeader('Content-Type', 'image/png');
         qrcode.toFileStream(res, qr);
     }

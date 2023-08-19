@@ -1,12 +1,14 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseFilters, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { User } from '@prisma/client';
 import { ApiTags } from '@nestjs/swagger';
 import { HomeService } from './home.service';
 import { SerachpDTO } from '../dto/serachdto.dto';
+import { HttpExceptionFilter } from 'src/auth/exception.filter';
 @Controller('home')
 @ApiTags('home')
+@UseFilters(HttpExceptionFilter)
 @UseGuards(AuthGuard('jwt'))
 export class HomeController {
     constructor(private readonly home: HomeService){}

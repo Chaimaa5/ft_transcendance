@@ -1,11 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Req, UseFilters, UseGuards } from '@nestjs/common';
 import { ProfileService } from './profile.service';
 import { Request } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { User } from '@prisma/client';
 import { ApiTags } from '@nestjs/swagger';
+import { HttpExceptionFilter } from 'src/auth/exception.filter';
 @Controller('profile')
 @ApiTags('profile')
+@UseFilters(HttpExceptionFilter)
+
 @UseGuards(AuthGuard('jwt'))
 export class ProfileController {
     constructor(private readonly profile: ProfileService){}
