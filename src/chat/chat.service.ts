@@ -93,12 +93,14 @@ export class ChatService {
                 }
             }
         })
+        let userId = ''
         let modifiedRooms =  Promise.all( rooms.map(async (room) =>{
             let message = ''
             if (room){
                 let members = room.membership
                 for (const member of members) {
                     if(member.userId != id){
+                        userId = id;
                         const user = await this.prisma.user.findUnique({where: {id: member.userId}})
                         if(user){
                             if(user.avatar){
@@ -112,8 +114,11 @@ export class ChatService {
                         }
                     }
                 }
-                if(room.message[0])
-                    message = room.message[0].content;
+                if(room.message){
+                    const number  = await this.prisma.message.count({where: {roomId: room.id}})
+                    if(number)
+                        message = room.message[number - 1].content;
+                }
             }
             return  {
                 'id': room.id,
@@ -121,6 +126,7 @@ export class ChatService {
                 'type': room.type,
                 'image': room.image,
                 'ownerId': room.ownerId,
+                'userId': userId,
                 'message': message
             }
         }))

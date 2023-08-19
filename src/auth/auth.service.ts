@@ -36,6 +36,7 @@ export class AuthService {
         const Refresh_Token = this.generateRefreshToken(req.user);
         res.cookie('access_token', Access_Token, {httpOnly: true});
         res.cookie('refresh_token', Refresh_Token, {httpOnly: true});
+        res.cookie('logged', true);
         const encryptedToken = this.encryptToken(Refresh_Token);
         this.userService.UpdateRefreshToken(check.id, encryptedToken)
         return find
@@ -44,6 +45,7 @@ export class AuthService {
     signOut(res: Response) {
         res.clearCookie('access_token');
         res.clearCookie('refresh_token');
+        res.cookie('logged', false);
         res.redirect('http://localhost/login');
     } 
 

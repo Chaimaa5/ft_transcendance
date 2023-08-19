@@ -17,6 +17,7 @@ export class ProfileService {
             let isSender = false;
             let isReceiver = false;
             let isBlocked = false;
+            let roomId = 0 ;
             const owner = await this.prisma.user.findUnique({where:{id : id},})
             const friends = await this.CountFriends(username);
             const user = await this.prisma.user.findUnique({where:{username : username},
@@ -69,7 +70,25 @@ export class ProfileService {
                     }
                 });
                 if(ownerFriend?.status.includes('accepted'))
+                {
                     isFriend = true;
+                    const room = await this.prisma.room.findFirst({where:{
+                        AND: [
+
+                           { membership: {
+                                some: {
+                                    userId: {
+                                        in: [id, user.id]
+                                    }
+                                }
+                            },},
+                            {isChannel: false}
+                        ]
+
+                    }})
+                    if(room)
+                        roomId = room.id
+                }
                 else if (ownerFriend?.status.includes('blocked'))
                     isBlocked = true;
                 else if (ownerFriend?.status.includes('pending'))
