@@ -4,7 +4,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { User } from '@prisma/client';
 import { ApiTags } from '@nestjs/swagger';
 import { ChatService } from './chat.service';
-import { AddMember, CreateChannel, CreateRoom } from './dto/Chat.dto';
+import { AddMember, CreateChannel, CreateRoom, UpdateChannel } from './dto/Chat.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Config } from 'src/user/multer.middlewear';
 
@@ -146,6 +146,12 @@ export class ChatController{
         await this.chat.leaveChannel(membershipId);
     }
    
+    @Post('setup')
+    @UseInterceptors(FileInterceptor('avatar', Config)) 
+    async UpdateChannel(@Req() req: Request,@Res() res: Response ,@UploadedFile() avatar: Express.Multer.File, @Body() room: UpdateChannel){
+        const user : User = req.user as User;
+        await this.chat.UpdateChannel(room, avatar);
+    }
     // @Get('kick/:membershipId')
     // async Kick(@Req() req: Request, @Param('membershipId') id: string){
     //     const roomId = parseInt(id, 10)

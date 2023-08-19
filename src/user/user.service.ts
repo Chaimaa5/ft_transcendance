@@ -233,7 +233,8 @@ export class UserService {
 
               
     async addFriend(id : string, Id: string){
-
+        if(id  == Id)
+            throw new UnauthorizedException('User Can not Add Himself')
         if (id){
                 const exist = await this.FindbyID(Id)
                 if (exist){
@@ -343,6 +344,8 @@ export class UserService {
     }
 
     async blockFriend(id : string, Id: string){
+        if(id  == Id)
+            throw new UnauthorizedException('User Can not Block Himself')
         if (id){
             const exist = await this.FindbyID(Id)
             if (exist){

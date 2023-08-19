@@ -397,11 +397,13 @@ export class ChatService {
 
 
     async UpdateChannel(room : UpdateChannel, image: Express.Multer.File){
-        const {name, type, password} = room
-        const imagePath = "/upload/" + image.filename
+        const {roomId, name, type, password} = room
+        let imagePath = ''
+        if(image)
+            imagePath = "/upload/" + image.filename
         if (type && password){
             let passwordEncrypted =  await bcrypt.hash(password as string, 10);
-            await this.prisma.room.update({where: {id: room.roomId},
+            await this.prisma.room.update({where: {id: roomId},
                 data: {
                     type: room.type as string,
                     password: passwordEncrypted,
