@@ -99,13 +99,13 @@ export class ChatService {
                 }
             })
             let userId = ''
-            let modifiedRooms =  Promise.all( rooms.map(async (room) =>{
+            let modifiedRooms =  await Promise.all( rooms.map(async (room) =>{
                 let message = ''
                 if (room){
                     let members = room.membership
                     for (const member of members) {
                         if(member.userId != id){
-                            userId = id;
+                            userId = member.userId ;
                             const user = await this.prisma.user.findUnique({where: {id: member.userId}})
                             if(user){
                                 if(user.avatar){
@@ -929,7 +929,6 @@ export class ChatService {
 
     async GetRoomMembers(roomId: number, userId: string) {
         try{
-
             let isFriend = false;
             let isSender = false;
             let isReceiver = false;
@@ -1012,6 +1011,7 @@ export class ChatService {
                         if(room)
                             DMroomId = room.id
                     }
+                    
                         return {
                             'membershipId': member.id,
                             'userId': member.user.id,
@@ -1028,7 +1028,9 @@ export class ChatService {
                         }
                     })
                     );
-                return members
+                    
+                    // console.log(members)
+                    return members
         }catch(e){throw new HttpException('Undefined Parameters', HttpStatus.BAD_REQUEST) }
     }
 

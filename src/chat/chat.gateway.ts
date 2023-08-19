@@ -117,10 +117,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect{
         const room = parseInt(roomId);
         const userId = client.data.payload.id;
         if(message){
-            const rcvData = await this.chatService.storeMessage(room, userId, message);
             const isMuted = await this.chatService.checkMute(room, userId)
             const isBanned = await this.chatService.checkBan(room, userId)
             if(!isMuted && !isBanned){
+                const rcvData = await this.chatService.storeMessage(room, userId, message);
                 if(rcvData)
                     this.emitMessage(rcvData, room, userId)
             }
