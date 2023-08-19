@@ -8,8 +8,8 @@ import { SerachpDTO } from '../dto/serachdto.dto';
 import { HttpExceptionFilter } from 'src/auth/exception.filter';
 @Controller('home')
 @ApiTags('home')
-@UseFilters(HttpExceptionFilter)
 @UseGuards(AuthGuard('jwt'))
+@UseFilters(HttpExceptionFilter)
 export class HomeController {
     constructor(private readonly home: HomeService){}
 

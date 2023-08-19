@@ -36,7 +36,7 @@ export class CreateChannel{
 
 export class UpdateChannel{ 
   @ApiProperty()             
-  roomId?  :number
+  roomId?  :String
   @ApiProperty()             
   name?  :String
   @ApiProperty()

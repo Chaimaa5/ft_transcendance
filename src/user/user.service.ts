@@ -131,13 +131,11 @@ export class UserService {
         try{
             if (id)
             {
-                let  imagePath = '';
-                if(avatar)
-                   imagePath = "/upload/" + avatar.filename;
-                else
-                    imagePath = "/upload/avatar.png";
+                if(avatar){
+                    let imagePath = "/upload/" + avatar.filename;
+                    await this.prisma.user.update({where: {id: id}, data: {avatar: imagePath}}); 
+                }
                 const username = data.username as string
-                await this.prisma.user.update({where: {id: id}, data: {avatar: imagePath}});
                 if (username){
                     await this.prisma.user.update({where: {id: id}, data: {username: username}});
                 }

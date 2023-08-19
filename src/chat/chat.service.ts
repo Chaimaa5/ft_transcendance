@@ -417,14 +417,14 @@ export class ChatService {
 
     async UpdateChannel(room : UpdateChannel, image: Express.Multer.File){
         try{
-
             const {roomId, name, type, password} = room
+            const id = parseInt(roomId as string)
             let imagePath = ''
             if(image)
                 imagePath = "/upload/" + image.filename
             if (type && password){
                 let passwordEncrypted =  await bcrypt.hash(password as string, 10);
-                await this.prisma.room.update({where: {id: roomId},
+                await this.prisma.room.update({where: {id: id},
                     data: {
                         type: room.type as string,
                         password: passwordEncrypted,
@@ -433,21 +433,21 @@ export class ChatService {
                 })
             }
             else if(name){
-                await this.prisma.room.update({where: {id: room.roomId},
+                await this.prisma.room.update({where: {id: id},
                     data: {
                         name: room.name as string,
                     }  
                 })
             }
             else if(image){
-                await this.prisma.room.update({where: {id: room.roomId},
+                await this.prisma.room.update({where: {id: id},
                     data: {
                         image: imagePath
                     }  
                 })
             }
             else if(name && image){
-                await this.prisma.room.update({where: {id: room.roomId},
+                await this.prisma.room.update({where: {id: id},
                     data: {
                         name: room.name as string,
                         image: imagePath
@@ -456,7 +456,7 @@ export class ChatService {
             }
             else{
                 let passwordEncrypted =  await bcrypt.hash(password as string, 10);
-                await this.prisma.room.update({where: {id: room.roomId},
+                await this.prisma.room.update({where: {id: id},
                     data: {
                         name: room.name as string,
                         image: imagePath,

@@ -13,8 +13,8 @@ import { HttpExceptionFilter } from 'src/auth/exception.filter';
 
 @Controller('chat')
 @ApiTags('chat')
-@UseFilters(HttpExceptionFilter)
 @UseGuards(AuthGuard('jwt'))
+@UseFilters(HttpExceptionFilter)
 export class ChatController{
     constructor(private readonly chat: ChatService){}
     
@@ -133,23 +133,25 @@ export class ChatController{
     }
 
     @Post('/joinProtected/:roomId')
-    async JoinProtectedChannel(@Req() req: Request, @Param('roomId') Id: any, @Body('password') password: string){
+    async JoinProtectedChannel(@Req() req: Request, @Res() res: Response, @Param('roomId') Id: any, @Body('password') password: string){
         const roomId = parseInt(Id, 10)
         const user = req.user as User
-       const verified = await this.chat.VerifyPassword(roomId, password)
-       if(verified)
+        const verified = await this.chat.VerifyPassword(roomId, password)
+        if(verified)
             await this.chat.createMembership(roomId, user.id)
+        else
+            res.json("password incorrect")
     }
 
-    @Get('leave/:membershipId')
+    @Get('/leave/:membershipId')
     async LeaveRoom(@Req() req: Request, @Param('membershipId') id: string){
         const membershipId = parseInt(id, 10)
         const user = req.user as User;
         await this.chat.leaveChannel(membershipId);
     }
    
-    @Post('setup')
-    @UseInterceptors(FileInterceptor('avatar', Config)) 
+    @Post('/update')
+    @UseInterceptors(FileInterceptor('image', Config)) 
     async UpdateChannel(@Req() req: Request,@Res() res: Response ,@UploadedFile() avatar: Express.Multer.File, @Body() room: UpdateChannel){
         const user : User = req.user as User;
         await this.chat.UpdateChannel(room, avatar);

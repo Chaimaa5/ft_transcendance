@@ -7,9 +7,9 @@ import { ApiTags } from '@nestjs/swagger';
 import { HttpExceptionFilter } from 'src/auth/exception.filter';
 @Controller('profile')
 @ApiTags('profile')
-@UseFilters(HttpExceptionFilter)
 
 @UseGuards(AuthGuard('jwt'))
+@UseFilters(HttpExceptionFilter)
 export class ProfileController {
     constructor(private readonly profile: ProfileService){}
             

@@ -6,9 +6,9 @@ import { ApiTags } from '@nestjs/swagger';
 import { LeaderboardService } from './leaderboard.service';
 import { HttpExceptionFilter } from 'src/auth/exception.filter';
 @Controller('leaderboard')
-@UseFilters(HttpExceptionFilter)
 @ApiTags('leaderboard')
 @UseGuards(AuthGuard('jwt'))
+@UseFilters(HttpExceptionFilter)
 export class LeaderboardController {
     constructor(private readonly profile: LeaderboardService){}
 

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, OnApplicationShutdown, Param, Patch, Post, Put, Req, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, OnApplicationShutdown, Param, Patch, Post, Put, Req, Res, UploadedFile, UseFilters, UseGuards, UseInterceptors } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateUserDTO } from './dto/updatedto.dto'
 import { Request, Response} from 'express';
@@ -8,11 +8,14 @@ import { User } from '@prisma/client';
 import { ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Config } from './multer.middlewear';
+import { HttpExceptionFilter } from 'src/auth/exception.filter';
 
 
 @Controller('user')
 @ApiTags('user')
 @UseGuards(AuthGuard('jwt'))
+@UseFilters(HttpExceptionFilter)
+
 export class UserController{
     constructor(private readonly userservice: UserService){}
         
