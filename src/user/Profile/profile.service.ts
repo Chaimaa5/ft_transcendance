@@ -114,7 +114,8 @@ export class ProfileService {
                 'isFriend': isFriend,
                 'isSender': isSender,
                 'isReceiver': isReceiver,
-                'isBlocked': isBlocked
+                'isBlocked': isBlocked,
+                'roomId': roomId
     
             }
         }
