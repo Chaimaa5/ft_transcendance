@@ -298,16 +298,23 @@ export class ChatService {
     }
     
     
-    async kick(ownerId: string, roomId: number, memberId: number){
+    async kick(ownerId: string, memberId: number){
         try{
-            const member = await this.prisma.room.findUnique({
-                where: {id:  roomId}
-            }).membership({where: {userId: ownerId}}) 
-            if(member)
-            {
-                //need membership id
-                if(member[0].role != 'member')
-                    await this.prisma.membership.delete({where: {id:  memberId}})
+            const member = await this.prisma.membership.findUnique({
+                where: {id:  memberId}
+            })
+            if(member){
+                const user = await this.prisma.membership.findFirst({
+                    where:{AND: [
+                        {roomId:  member.roomId},
+                        {userId: ownerId}
+                    ] }
+                })
+                if(user)
+                {
+                    if(user.role != 'member')
+                        await this.prisma.membership.delete({where: {id:  memberId}})
+                }
             }
         }
         catch(e){throw new HttpException('Undefined Parameters', HttpStatus.BAD_REQUEST) }

@@ -76,8 +76,8 @@ export class ChatController{
           return await this.chat.unsetAdmin(user.id, membershipId)
       }
 
-    @Delete()
-    async DeleteChannel(@Req() req: Request, @Param('roomId') Id: any){
+    @Delete('/:chatId')
+    async DeleteChannel(@Req() req: Request, @Param('chatId') Id: any){
         const user = req.user as User
         const roomId = parseInt(Id, 10)
         return await this.chat.DeleteChannel(user.id, roomId)
@@ -136,8 +136,10 @@ export class ChatController{
         const roomId = parseInt(Id, 10)
         const user = req.user as User
         const verified = await this.chat.VerifyPassword(roomId, password)
-        if(verified)
+        if(verified){
             await this.chat.createMembership(roomId, user.id)
+            res.json("success")
+        }
         else
             res.json("password incorrect")
     }
@@ -155,12 +157,12 @@ export class ChatController{
         const user : User = req.user as User;
         await this.chat.UpdateChannel(room, avatar);
     }
-    // @Get('kick/:membershipId')
-    // async Kick(@Req() req: Request, @Param('membershipId') id: string){
-    //     const roomId = parseInt(id, 10)
-    //     const user = req.user as User
-    //     await this.chat.kick(roomId, user.id)
-    // }
+    @Get('kick/:membershipId')
+    async Kick(@Req() req: Request, @Param('membershipId') id: string){
+        const membershipId = parseInt(id, 10)
+        const user = req.user as User
+        await this.chat.kick(user.id, membershipId)
+    }
 
 }
 

@@ -447,6 +447,9 @@ export class ProfileService {
                             avatar: true,
                         }
                     },
+                    playerXp1: true,
+                    playerXp2: true,
+                    draw: true
                 },
                 
         
@@ -463,6 +466,13 @@ export class ProfileService {
                             if(!game.player2.avatar.includes('cdn.intra')  && !game.player2.avatar.includes('https://lh3.googleusercontent.com'))
                                 game.player2.avatar = 'http://' + process.env.HOST + ':' + process.env.BPORT + '/api' + game.player2.avatar
                         }
+                        let gameResult = ''
+                        if(game.winner){
+                            if(game.winner === id)
+                                gameResult = 'win'
+                            else
+                                gameResult = 'loss'
+                        }else gameResult = 'draw'
                         return {
                             'winner': game.winner,
                             'player1':{
@@ -472,7 +482,10 @@ export class ProfileService {
                             'player2':{
                                 'avatar': game.player2.avatar,
                                 'username': game.player2.username,
-                            }
+                            },
+                            'playerXp1': game.playerXp1,
+                            'playerXp2': game.playerXp2,
+                            'result': gameResult
                         }
                     }
                 })
