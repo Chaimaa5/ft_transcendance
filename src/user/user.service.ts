@@ -589,6 +589,21 @@ export class UserService {
         }catch(e){throw new HttpException('Undefined Parameters', HttpStatus.BAD_REQUEST) }
     }
 
+    async GetBanned(roomId: number){
+        try{
+            let banned = await this.prisma.membership.findMany({
+                where:{
+                    AND: [
+                        {roomId: roomId},
+                        {isBanned: true}
+                    ]
+                }
+            })
+
+            return banned
+            
+        }catch(e){}
+    }
     async Players() {
         try{
             let players = await this.prisma.user.findMany({

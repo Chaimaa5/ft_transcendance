@@ -102,17 +102,17 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect{
     async emitMessage(rcvData: any, roomId: number, userId: string) {
         let ChatRoom = this.rooms.get(roomId)
         if(ChatRoom ){
-                let Blocked = await this.userService.getBlockedUsers(userId);
-                console.log(Blocked)
-                console.log('userId: ', userId)
-                ChatRoom = ChatRoom.filter(ChatRoom => {
+            let Banned = await this.userService.GetBanned(roomId);
+            let Blocked = await this.userService.getBlockedUsers(userId);
+            ChatRoom = ChatRoom.filter(ChatRoom => {
                     const id = ChatRoom.data.payload.id;
-                    return  !Blocked.some(user => user.id === id);
+                    if(!Blocked.some(user => user.id === id) && !Banned?.some(member => member.userId === id))
+                        return  id;
                 })
-                ChatRoom.forEach(socket =>{
-                    this.server.to(socket.id).emit('receiveMessage', rcvData)
-                })
-            }
+            ChatRoom.forEach(socket =>{
+                this.server.to(socket.id).emit('receiveMessage', rcvData)
+            })
+        }
     }
 
     @SubscribeMessage('leave')
