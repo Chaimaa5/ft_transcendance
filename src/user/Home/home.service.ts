@@ -204,9 +204,9 @@ export class HomeService {
     }
 
 
-    async Search(input: string){
+    async Search(input: string, username: string){
       try{
-
+        
         if(input){
   
           let res = await this.prisma.user.findMany({
@@ -231,6 +231,11 @@ export class HomeService {
               avatar: true,
           }
           }) 
+
+         
+          res = res.filter((user) => {
+            return user.username !== username;
+          });
   
           res = await this.userService.updateAvatar(res);
           return res;
