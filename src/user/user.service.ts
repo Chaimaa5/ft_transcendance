@@ -549,9 +549,14 @@ export class UserService {
         try{
 
             if (id){
-                const blockedFriendships = await this.prisma.friendship.findMany({where: {
+                let blockedFriendships = await this.prisma.friendship.findMany({where: {
                     AND:[
-                        {blockerId: id},
+                        {
+                            OR: [
+                                {senderId: id},
+                                {receiverId: id}
+                            ]
+                        },
                         {status: 'blocked'},
                     ]},
                     select:{
@@ -574,9 +579,10 @@ export class UserService {
                         senderId: true
                     }
                 });
-                return blockedFriendships.map((friendship) => {
+                let blocked =  blockedFriendships.map((friendship) => {
                         return friendship.senderId === id ? friendship.receiver : friendship.sender;
                   });
+                  return blocked
             }   
             else
                 throw new UnauthorizedException('User  not found')

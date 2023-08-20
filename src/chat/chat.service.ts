@@ -325,9 +325,7 @@ export class ChatService {
                     let count = await this.prisma.membership.count({
                         where: {roomId: membership.roomId}
                     })
-                    if(count > 1){
-                        console.log('owner')
-    
+                    if(count > 1){    
                         //set owner
                         const newOwner = await this.prisma.membership.findFirst({
                             where: {
@@ -335,7 +333,8 @@ export class ChatService {
                                     {roomId: membership.roomId},
                                     {userId:{
                                         notIn: [membership.userId]
-                                    }}
+                                    }},
+                                    {isBanned: false},
                                 ]    
                             }
                         })
@@ -530,6 +529,10 @@ export class ChatService {
                     muteExpiration.setMinutes(muteExpiration.getMinutes() + (4 * 60))
                 if(muteDuration === '8 h')
                     muteExpiration.setMinutes(muteExpiration.getMinutes() + (8 * 60))
+                if(muteDuration === '1 d')
+                    muteExpiration.setMinutes(muteExpiration.getMinutes() + (24 * 60))
+                if(muteDuration === '1 y')
+                    muteExpiration.setMinutes(muteExpiration.getMinutes() + (8760 * 60))
                 await this.prisma.membership.update({
                     where: {id: membershipId},
                     data:{
@@ -640,8 +643,9 @@ export class ChatService {
                         channel.image = 'http://' + process.env.HOST + ':' + process.env.BPORT +'/api' + channel.image
                 }
                     let count = await this.prisma.membership.count({
-                        where: {roomId: channel.id}
+                        where: {roomId: channel.id, isBanned: false}
                     }) 
+                    console.log(count)
                     return {'id': channel.id,
                             'name': channel.name,
                             'type': channel.type,
@@ -691,7 +695,7 @@ export class ChatService {
                         channel.image = 'http://' + process.env.HOST + ':' + process.env.BPORT +'/api'+ channel.image
                 }
                     let count = await this.prisma.membership.count({
-                        where: {roomId: channel.id}
+                        where: {roomId: channel.id, isBanned: false}
                     })
                     return {'id': channel.id,
                             'name': channel.name,
@@ -700,7 +704,6 @@ export class ChatService {
                             'ownerId': channel.ownerId,
                             'count': count}
                 })
-    
             );
             return channelss
         }catch(e){throw new HttpException('Undefined Parameters', HttpStatus.BAD_REQUEST) }
@@ -757,7 +760,12 @@ export class ChatService {
             if (id){
                 const blockedFriendships = await this.prisma.friendship.findMany({where: {
                     AND:[
-                        // {blockerId: id},
+                        {
+                            OR: [
+                                {senderId: id},
+                                {receiverId: id}
+                            ]
+                        },
                         {status: 'blocked'},
                     ]},
                     select:{

@@ -19,11 +19,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect{
     rooms = new Map<number, Socket[]>()
 
     async afterInit(client: Socket) {
-        console.log('WebSocket gateway initialized!');
     }
     
     async handleDisconnect(client: Socket){ 
-        console.log('WebSocket gateway disconnected!');
         this.clients.forEach((socket, key) =>{
             if(socket === socket){
                 this.clients.delete(key);
@@ -77,32 +75,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect{
         client.join(roomId);
     }
 
-    // @SubscribeMessage('sendMessage')
-    // async handleMessage(client: Socket, body : {roomId: string, message: string}){
-    //     const {roomId, message} = body;
-    //     const room = parseInt(roomId);
-    //     const userId = client.data.payload.id;
-    //     const isMuted = await this.chatService.checkMute(room, userId)
-    //     const isBanned = await this.chatService.checkBan(room, userId)
-    //     if(!isMuted && !isBanned){
-    //         const rcvData : any = await this.chatService.storeMessage(room, userId, message);
-    //         const Blocked = new Set(await this.userService.getBlockedUsers(userId));
-    //         const ChatRoom = this.rooms.get(roomId)
-    //         if(ChatRoom ){
-    //             console.log('room: ', ChatRoom)
-    //             // ChatRoom = ChatRoom.filter(ChatRoom => {
-    //             //     const id = ChatRoom.data.payload.id;
-    //             //     return !Blocked.has(id) 
-    //             // })
-    //             ChatRoom.forEach(socket =>{
-    //                 // console.log('id:', socket.data.payload.id)
-    //                 this.server.to(socket.id).emit('receiveMessage', rcvData)
-    //             })
-    //         }
-    //     }
-    // }
-
-
 
     @SubscribeMessage('joinChat')
     joinRoom(client: Socket, roomId: string){
@@ -131,6 +103,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect{
         let ChatRoom = this.rooms.get(roomId)
         if(ChatRoom ){
                 let Blocked = await this.userService.getBlockedUsers(userId);
+                console.log(Blocked)
+                console.log('userId: ', userId)
                 ChatRoom = ChatRoom.filter(ChatRoom => {
                     const id = ChatRoom.data.payload.id;
                     return  !Blocked.some(user => user.id === id);
