@@ -30,7 +30,7 @@ export class AuthService {
         
 
     async signIn(res: Response, req: Request) {
-        const find = this.userService.FindUser(req.user);
+        const find = await this.userService.FindUser(req.user);
         const check = await this.userService.GetUser(req.user);
         const Access_Token = this.generateToken(req.user);
         const Refresh_Token = this.generateRefreshToken(req.user);

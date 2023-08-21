@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger"
-import { IsNotEmpty, IsOptional, IsString, MinLength } from "class-validator"
+import { IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from "class-validator"
 
 export class CreateRoom{ 
   @ApiProperty()             
@@ -53,6 +53,6 @@ export class UpdateChannel{
 
 export class PasswordDTO{
   @IsNotEmpty()
-  @MinLength(8)
+  @MaxLength(60)
   password  : String
 }

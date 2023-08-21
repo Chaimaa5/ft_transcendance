@@ -79,4 +79,10 @@ export class GameController{
 		const gameId : number = parseInt(id);
 		return await this.gameService.getTrainingGame(gameId);
 	}
+
+	@Get('/endGame/:gameId')
+	async EndGame(@Req() req: Request, @Param('gameId') gameId : number, @Res() res : Response){
+		const user : User = req.user as User;
+		await this.gameService.EndGame(gameId, user.id)
+	}
 }

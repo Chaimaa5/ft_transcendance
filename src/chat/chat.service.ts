@@ -515,9 +515,9 @@ export class ChatService {
         }catch(e){throw new HttpException('Permission Denied', HttpStatus.FORBIDDEN) }
     }
 
-    async muteMember(id: string, membershipId: number,  muteDuration: string){
+    async muteMember(id: string, membershipId: number,  duration: any){
         try{
-
+            const muteDuration = duration.duration
             const membership = await this.prisma.membership.findUnique({where: {id: membershipId}})
             if(membership){
                 const user = await this.prisma.membership.findFirst({
@@ -531,7 +531,6 @@ export class ChatService {
                 if(user?.role === 'member')
                     throw new UnauthorizedException('Permission Denied')
                 const muteExpiration = new Date()
-    
                 if(muteDuration === '4 h')
                     muteExpiration.setMinutes(muteExpiration.getMinutes() + (4 * 60))
                 if(muteDuration === '8 h')

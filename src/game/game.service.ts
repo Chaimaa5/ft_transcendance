@@ -29,6 +29,7 @@ const VIRTUAL_PADDLE_HEIGHT = VIRTUAL_TABLE_HEIGHT/3;
 @Injectable()
 export class GameService {
 	
+	
     prisma = new PrismaClient();
 	roomIdCounter = 1;
 	notification = new NotificationService
@@ -394,4 +395,86 @@ export class GameService {
 		})
 		return(game);
 	}
+
+	async EndGame(gameId: number, userId: string) {
+		try{
+			if(gameId){
+				const game = await this.prisma.game.findUnique({where: {id: gameId}})
+				if(game){
+					if(game.playerId2){
+						let player1, player2
+						if(userId === game.playerId1){
+							player1 = await this.prisma.user.findUnique({where: {id: game.playerId1}})
+							player2 = await this.prisma.user.findUnique({where: {id: game.playerId2}})
+						}else{
+							player1 = await this.prisma.user.findUnique({where: {id: game.playerId2}})
+							player2 = await this.prisma.user.findUnique({where: {id: game.playerId1}})
+						}
+						if(player1 && player2){
+							if(!player1.avatar.includes('cnd.inta') && !player1.avatar.includes('google'))
+								player1.avatar = 'http://' + process.env.HOST + ':' + process.env.BPORT +'/api' + player1.avatar
+							if(!player2.avatar.includes('cnd.inta') && !player2.avatar.includes('google'))
+								player2.avatar = 'http://' + process.env.HOST + ':' + process.env.BPORT +'/api' + player2.avatar
+							if(game.draw)
+								return{
+									'content': 'It was a fair game',
+									'player1': {
+										'username': player1.username,
+										'avatar': player1.avatar,
+										'hits': game.playerXp1,
+										'xp': '+ 0XP',
+										'topaz': '+0'
+									},
+									'player2': {
+										'username': player2.username,
+										'avatar': player2.avatar,
+										'hits': game.playerXp2,
+										'xp': '+ 0XP',
+										'topaz': '+0'
+									}
+								}
+							if(game.winner === userId)
+								return {
+									'content': 'You win',
+									'player1': {
+										'username': player1.username,
+										'avatar': player1.avatar,
+										'hits': game.playerXp1,
+										'xp': '+ 100XP',
+										'topaz': '+1'
+									},
+									'player2': {
+										'username': player2.username,
+										'avatar': player2.avatar,
+										'hits': game.playerXp2,
+										'xp': '+ 0XP',
+										'topaz': '+0'
+									}
+								}
+							else{
+								return {
+									'content': 'You lose',
+									'player1': {
+										'username': player1.username,
+										'avatar': player1.avatar,
+										'hits': game.playerXp1,
+										'xp': '+ 0XP',
+										'topaz': '+0'
+									},
+									'player2': {
+										'username': player2.username,
+										'avatar': player2.avatar,
+										'hits': game.playerXp2,
+										'xp': '+ 100XP',
+										'topaz': '+1'
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}catch(e){}
+	}
+
 }

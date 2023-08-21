@@ -93,7 +93,7 @@ export class ChatController{
         return await this.chat.BanUpdate(user.id, membershipId, true)
     }
     @Post('/mute/:membershipId')
-    async MuteMember(@Req() req: Request, @Param('membershipId') Id: any, @Body() duration: string){
+    async MuteMember(@Req() req: Request, @Param('membershipId') Id: any, @Body() duration: any){
         const user = req.user as User
         const membershipId = parseInt(Id, 10)
         return await this.chat.muteMember(user.id, membershipId, duration)
