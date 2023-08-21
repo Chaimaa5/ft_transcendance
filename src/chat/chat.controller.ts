@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpException, HttpStatus, OnApplicationShutdown, Param, Patch, Post, Put, Req, Res, UploadedFile, UseFilters, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpException, HttpStatus, OnApplicationShutdown, Param, Patch, Post, Put, Req, Res, UploadedFile, UseFilters, UseGuards, UseInterceptors, ValidationPipe } from '@nestjs/common';
 import { Request, Response} from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { User } from '@prisma/client';
@@ -27,7 +27,7 @@ export class ChatController{
 
     @Post('/create/')
     @UseInterceptors(FileInterceptor('image', Config)) 
-    async CreateChannel(@Req() req: Request, @UploadedFile() image: Express.Multer.File, @Body() body: CreateChannel){
+    async CreateChannel(@Req() req: Request, @UploadedFile() image: Express.Multer.File, @Body(ValidationPipe) body: CreateChannel){
         const user = req.user as User
         return await this.chat.CreateChannel(user.id, body, image);
     }
@@ -127,9 +127,10 @@ export class ChatController{
     }
 
     @Post('/joinProtected/:roomId')
-    async JoinProtectedChannel(@Req() req: Request, @Res() res: Response, @Param('roomId') Id: any, @Body() body: PasswordDTO){
+    async JoinProtectedChannel(@Req() req: Request, @Res() res: Response, @Param('roomId') Id: any, @Body(ValidationPipe) body: PasswordDTO){
         const roomId = parseInt(Id, 10)
         const user = req.user as User
+        console.log(body)
         const verified = await this.chat.VerifyPassword(roomId, body.password as string)
         if(verified){
             await this.chat.createMembership(roomId, user.id)
@@ -148,7 +149,7 @@ export class ChatController{
    
     @Post('/update')
     @UseInterceptors(FileInterceptor('image', Config)) 
-    async UpdateChannel(@Req() req: Request,@Res() res: Response ,@UploadedFile() avatar: Express.Multer.File, @Body() room: UpdateChannel){
+    async UpdateChannel(@Req() req: Request,@Res() res: Response ,@UploadedFile() avatar: Express.Multer.File, @Body(ValidationPipe) room: UpdateChannel){
         const user : User = req.user as User;
         await this.chat.UpdateChannel(room, avatar);
     }

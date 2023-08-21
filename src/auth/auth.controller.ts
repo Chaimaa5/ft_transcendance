@@ -42,7 +42,6 @@ export class AuthController {
     @Get('/google')
     @UseGuards(AuthGuard('google'))
     async handleGoogleAuth(@Req() req: Request, @Res() res: Response){
-        console.log(req.user)
         const check = await this.authservice.signIn(res, req);
         if (check == 1){
             const user = req.user as User

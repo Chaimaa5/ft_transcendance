@@ -208,7 +208,8 @@ export class HomeService {
       try{
         
         if(input){
-  
+          const user = await this.prisma.user.findUnique({where:{username: username}})
+          if(user){
           let res = await this.prisma.user.findMany({
             where: {
               OR: [
@@ -232,13 +233,21 @@ export class HomeService {
           }
           }) 
 
-         
-          res = res.filter((user) => {
-            return user.username !== username;
-          });
-  
-          res = await this.userService.updateAvatar(res);
-          return res;
+            let blocked = await this.userService.getBlockedUsers(user.id)
+            
+            res = res.filter((user) => {
+              return user.username !== username;
+            });
+            console.log(blocked)
+            for(const block of blocked){
+              res = res.filter((user) => {
+                return user.username !== block.username;
+              });
+            }
+            
+            res = await this.userService.updateAvatar(res);
+            return res;
+          }
         }
         else
               throw new UnauthorizedException('User  not found')

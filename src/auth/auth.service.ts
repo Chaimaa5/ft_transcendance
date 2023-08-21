@@ -115,7 +115,6 @@ export class AuthService {
                 res.cookie('refresh_token', Refresh_Token, {httpOnly: true, secure: true,});
                 const encryptedToken = this.encryptToken(Refresh_Token);
                 await this.userService.UpdateRefreshToken(user.id , encryptedToken)
-                console.log('finished')
             }
             else{
                 throw new ForbiddenException('Access Denied');

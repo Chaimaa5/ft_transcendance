@@ -48,7 +48,6 @@ export class UpdateChannel{
   type?  : String
   @ApiProperty()
   @IsOptional()
-  @MinLength(8)
   password?  : String
 }
 
