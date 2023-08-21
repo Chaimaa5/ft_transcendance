@@ -478,13 +478,13 @@ export class ProfileService {
                             'player1':{
                                 'avatar': game.player1.avatar,
                                 'username': game.player1.username,
+                                'hits': game.playerXp1,
                             },
                             'player2':{
                                 'avatar': game.player2.avatar,
                                 'username': game.player2.username,
+                                'hits': game.playerXp2,
                             },
-                            'playerXp1': game.playerXp1,
-                            'playerXp2': game.playerXp2,
                             'result': gameResult
                         }
                     }

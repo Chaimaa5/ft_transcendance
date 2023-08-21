@@ -4,7 +4,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { User } from '@prisma/client';
 import { ApiTags } from '@nestjs/swagger';
 import { ChatService } from './chat.service';
-import { AddMember, CreateChannel, CreateRoom, UpdateChannel } from './dto/Chat.dto';
+import { AddMember, CreateChannel, CreateRoom, PasswordDTO, UpdateChannel } from './dto/Chat.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Config } from 'src/user/multer.middlewear';
 import { HttpExceptionFilter } from 'src/auth/exception.filter';
@@ -22,15 +22,9 @@ export class ChatController{
     @Get('/rooms')
     async GetJoinedRooms(@Req() req: Request){
         const user = req.user as User
-        // if (user)
-            return await this.chat.GetJoinedRooms(user.id);
+        return await this.chat.GetJoinedRooms(user.id);
     }
 
-    //working
-
-
-
-    //working
     @Post('/create/')
     @UseInterceptors(FileInterceptor('image', Config)) 
     async CreateChannel(@Req() req: Request, @UploadedFile() image: Express.Multer.File, @Body() body: CreateChannel){
@@ -69,7 +63,7 @@ export class ChatController{
           return await this.chat.setAdmin(user.id, membershipId)
       }
 
-          @Get('/:membershipId/unsetAdmin/')
+    @Get('/:membershipId/unsetAdmin/')
       async UnSetAdmin(@Req() req: Request, @Param('membershipId') Id: any){
           const user = req.user as  User
           const membershipId = parseInt(Id, 10)
@@ -77,10 +71,11 @@ export class ChatController{
       }
 
     @Delete('/:chatId')
-    async DeleteChannel(@Req() req: Request, @Param('chatId') Id: any){
+    async DeleteChannel(@Req() req: Request, @Param('chatId') Id: string){
         const user = req.user as User
         const roomId = parseInt(Id, 10)
-        return await this.chat.DeleteChannel(user.id, roomId)
+        if(roomId)
+            return await this.chat.DeleteChannel(user.id, roomId)
 
     }
 
@@ -132,10 +127,10 @@ export class ChatController{
     }
 
     @Post('/joinProtected/:roomId')
-    async JoinProtectedChannel(@Req() req: Request, @Res() res: Response, @Param('roomId') Id: any, @Body('password') password: string){
+    async JoinProtectedChannel(@Req() req: Request, @Res() res: Response, @Param('roomId') Id: any, @Body() body: PasswordDTO){
         const roomId = parseInt(Id, 10)
         const user = req.user as User
-        const verified = await this.chat.VerifyPassword(roomId, password)
+        const verified = await this.chat.VerifyPassword(roomId, body.password as string)
         if(verified){
             await this.chat.createMembership(roomId, user.id)
             res.json("success")

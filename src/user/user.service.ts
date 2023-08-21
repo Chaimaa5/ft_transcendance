@@ -95,7 +95,7 @@ export class UserService {
                 const Exists = await this.prisma.user.findUnique({
                     where:{id: user.id},
                 });
-        
+                console.log(Exists)
                 if (Exists)
                     return 1;
                 else
@@ -148,10 +148,12 @@ export class UserService {
     }
 
     async updateOnlineStatus(id: string, status: boolean) {
-        if (id)
-            await this.prisma.user.update({where: {id: id}, data: {status: status}})
-        else
-            throw new UnauthorizedException('User  not found')
+        try{
+            if (id)
+                await this.prisma.user.update({where: {id: id}, data: {status: status}})
+            else
+                throw new UnauthorizedException('User  not found')
+        }catch(e){}
     }
 
     

@@ -19,7 +19,6 @@ import { HttpExceptionFilter } from 'src/auth/exception.filter';
 export class UserController{
     constructor(private readonly userservice: UserService){}
         
-    //working
     @Get()
     async FindbyID(@Req() req: Request){
         const user : User = req.user as User;
@@ -30,24 +29,20 @@ export class UserController{
     async Players(){
         return await this.userservice.Players();
     }
-    //working
     @Delete()
     async DeleteUser(@Req() req: Request, @Res() res: Response){
         const user : User = req.user as User;
         return await this.userservice.DeleteUser(user.id, res);
     }
 
-    //working
     @Post('setup')
     @UseInterceptors(FileInterceptor('avatar', Config)) 
     async UserSetup(@Req() req: Request,@Res() res: Response ,@UploadedFile() avatar: Express.Multer.File, @Body() data: UpdateUserDTO){
         const user : User = req.user as User;
-        console.log(data)
         await this.userservice.userSetup(user.id, avatar, data);
     }
 
-    //Friendship Management
-    //working
+
     @Get('/add/:id')
     async addFriend(@Req() req: Request, @Param('id') id: string){
         const user : User = req.user as User;
@@ -103,17 +98,10 @@ export class UserController{
 
     @Delete('avatar')
     async DeleteAvatar(@Req() req: Request){
-        console.log('here')
         const user : User = req.user as User;
         await this.userservice.DeleteAvatar(user.id);
     }
 
-
-    // async onApplicationShutdown(signal?: string): Promise<void>{
-    //     const connectedUsers = Array.from(this.socketGateway.connectedUsers);
-    //     for(const userId of connectedUsers)
-    //         await this.updateOnlineStatus(userId, false);
-    // }
 
 }
 

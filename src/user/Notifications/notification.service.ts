@@ -7,8 +7,7 @@ export class NotificationService {
     prisma = new PrismaClient();
     private Emitter = new EventEmitter();
     constructor(){}
-   //invite to room
-   //message received
+
    async addNotifications(senderId : string, receiverId: string, type: string, context: string){
     const sender = await this.prisma.user.findUnique({where: {id: senderId}})
     const receiver = await this.prisma.user.findUnique({where: {id: receiverId}})

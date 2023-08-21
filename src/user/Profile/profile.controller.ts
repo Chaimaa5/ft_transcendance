@@ -13,34 +13,28 @@ import { HttpExceptionFilter } from 'src/auth/exception.filter';
 export class ProfileController {
     constructor(private readonly profile: ProfileService){}
             
-    //---------Profile
 
-    //Profile info
     @Get(':username')
     async Profile(@Param('username') username: string, @Req() req: Request){
         const user : User = req.user as User;
         return await this.profile.Profile(user.id, username);
     }
 
-    //Acheivments
     @Get('/acheivments/:username')
     async GetAcheivments(@Param('username') username: string, @Req() req: Request){
         return await this.profile.Badges(username);
     }
 
-    //MatchHistory --- Not Complete
     @Get('/history/:username')
     async MatchHistory(@Param('username') username: string,@Req() req: Request){
         return await this.profile.MatchHistory(username);
     }
 
-    //Percentage in profile
     @Get('/statistics/:username')
     async UserStatistics(@Param('username') username: string, @Req() req: Request){
         return await this.profile.CalculatePercentage(username);
     }
 
-    //List of friends in profile
     @Get('/friends/:username')
     async Friends(@Param('username') username: string, @Req() req: Request){
         const user : User = req.user as User;
