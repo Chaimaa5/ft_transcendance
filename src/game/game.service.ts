@@ -25,7 +25,7 @@ const paddleSizeMap: { [key: number]: string } = {
 
 export const VIRTUAL_TABLE_WIDTH = 1000;
 export const VIRTUAL_TABLE_HEIGHT = 500;
-const VIRTUAL_SPEED_RATIO = 100;
+const VIRTUAL_SPEED_RATIO = 150;
 const VIRTUAL_PADDLE_WIDTH = VIRTUAL_TABLE_WIDTH*0.02;
 const VIRTUAL_PADDLE_HEIGHT = VIRTUAL_TABLE_HEIGHT/3;
 
@@ -52,20 +52,30 @@ export class GameService {
 		const minValue = -Math.PI/4;
 		const maxValue = Math.PI/4;
 
-		// generate a random number between 0 and 1
 		const randomZeroToOne = Math.random();
-		// scale and shift the random number to fit the desired rane
+
+
 		const randomValueInRange = randomZeroToOne * (maxValue - minValue) + minValue;
 
 		return(randomValueInRange);
 	}
 
+	randomSign = () : number => {
+		// Generate a random number between 0 and 1
+		const randomValue = Math.random();
+
+		// Map the random value to 1 or -1
+		const randomSign = randomValue < 0.5 ? 1 : -1;
+
+		return(randomSign);
+	}
+
 	startGameLoop(roomId : string) {
 		const room = this.rooms.get(roomId);
 		if(room) {
-			const intervalId = setInterval(() => {
+			const intervalId = setInterval(async () => {
 				this.moveBall(room.ball, roomId, (room.thisRound.roundNumber*room.speedIncrement));
-				this.checkEdges(room);
+				await this.checkEdges(room);
 				if(room.isGameEnded === true) {
 					clearInterval(intervalId);
 					return;
@@ -90,7 +100,7 @@ export class GameService {
 		room.paddleHeight = VIRTUAL_TABLE_HEIGHT/(3 + ((room.thisRound.roundNumber+1) * room.paddleHeightDecrement));
 	}
 
-	updateScore(room : RoomState, side : PaddleSide) {
+	async updateScore(room : RoomState, side : PaddleSide) {
 		if(side === PaddleSide.Left) {
 			room.thisRound.leftPlayerScore++;
 			if(room.thisRound.leftPlayerScore === room.pointsToWin) {
@@ -98,7 +108,7 @@ export class GameService {
 				room.players[0].roundScore++;
 				if(room.thisRound.roundNumber === room.rounds) {
 					room.isGameEnded = true;
-					this.postGameResult(room).then((res) => {
+					await this.postGameResult(room).then((res) => {
 						const gameResult : GameResults = res;
 						this.events.emit('handleEndGame', {roomId : room.roomId, gameResults : gameResult});
 					});
@@ -112,7 +122,7 @@ export class GameService {
 				room.players[1].roundScore++;
 				if(room.thisRound.roundNumber === room.rounds) {
 					room.isGameEnded = true;
-					this.postGameResult(room).then((res) => {
+					await this.postGameResult(room).then((res) => {
 						const gameResult : GameResults = res;
 						this.events.emit('handleEndGame', {roomId : room.roomId, gameResults : gameResult});
 					});
@@ -122,9 +132,10 @@ export class GameService {
 		this.events.emit('handleUpdateScore', room);
 	}
 
-	checkEdges(room : RoomState) {
+	async checkEdges(room : RoomState) {
 		const radius = (VIRTUAL_TABLE_WIDTH*0.02)/2;
 		const angle = this.randomInitialDirection();
+		const randomSign = this.randomSign();
 		if((room.ball.y - radius) <= 0 || (room.ball.y + radius) >= VIRTUAL_TABLE_HEIGHT)
 		{
 			room.ball.ballSpeedY *= -1;
@@ -133,18 +144,18 @@ export class GameService {
 		{
 			room.ball.x = VIRTUAL_TABLE_WIDTH/2;
 			room.ball.y = VIRTUAL_TABLE_HEIGHT/2;
-			room.ball.ballSpeedX = VIRTUAL_TABLE_WIDTH/(VIRTUAL_SPEED_RATIO - (room.thisRound.roundNumber * room.speedIncrement)) *  Math.cos(angle);
+			room.ball.ballSpeedX = randomSign * (VIRTUAL_TABLE_WIDTH/(VIRTUAL_SPEED_RATIO - (room.thisRound.roundNumber * room.speedIncrement)) *  Math.cos(angle));
 			room.ball.ballSpeedY = VIRTUAL_TABLE_WIDTH/(VIRTUAL_SPEED_RATIO - (room.thisRound.roundNumber * room.speedIncrement)) *  Math.sin(angle);
-			this.updateScore(room, PaddleSide.Left);
+			await this.updateScore(room, PaddleSide.Left);
 			this.events.emit('handleUpdateScore', room);
 		}
 		if((room.ball.x - radius) <= 0)
 		{
 			room.ball.x = VIRTUAL_TABLE_WIDTH/2;
 			room.ball.y = VIRTUAL_TABLE_HEIGHT/2;
-			room.ball.ballSpeedX = VIRTUAL_TABLE_WIDTH/(VIRTUAL_SPEED_RATIO - (room.thisRound.roundNumber * room.speedIncrement)) *  Math.cos(angle);
+			room.ball.ballSpeedX = randomSign * (VIRTUAL_TABLE_WIDTH/(VIRTUAL_SPEED_RATIO - (room.thisRound.roundNumber * room.speedIncrement)) *  Math.cos(angle));
 			room.ball.ballSpeedY = VIRTUAL_TABLE_WIDTH/(VIRTUAL_SPEED_RATIO - (room.thisRound.roundNumber * room.speedIncrement)) *  Math.sin(angle);
-			this.updateScore(room, PaddleSide.Right);
+			await this.updateScore(room, PaddleSide.Right);
 			this.events.emit('handleUpdateScore',room);
 		}
 	}
@@ -187,19 +198,17 @@ export class GameService {
 	}
 	}
 
-	updatePaddlePosition(roomId : string, playerId : string, paddlePosY : number) {
+	updatePaddlePosition(roomId : string, side : PaddleSide, paddlePosY : number) {
 		const room = this.rooms.get(roomId);
 		if(room) {
-			const player = room.players.find(p => p.playerId === playerId);
-			if(player) {
-				player.y = paddlePosY;
-			}
+			const player = (room.players[0].side === side) ? room.players[0] : room.players[1];
+			player.y = paddlePosY;
 		}
 	}
 
 	calculateSpeedIncrement(rounds : number, difficulty : string)  : number{
 		const minSpeedRatio : number = 0;
-		const maxSpeedRatio : number = 200;
+		const maxSpeedRatio : number = 500;
 		let speedIncrement : number = 0;
 		if(difficulty === 'flashy') {
 			speedIncrement = (maxSpeedRatio - minSpeedRatio)/rounds;
@@ -225,8 +234,13 @@ export class GameService {
 
 	createRoom(gameId : number, rounds : number, pointsToWin : number, difficulty : string) : string {
 		const roomId = "room_" + gameId;
-		const speedIncrement = this.calculateSpeedIncrement(rounds*pointsToWin, difficulty);
-		const paddleHeightDecrement = this.calculatePaddleHeightDecrement(rounds*pointsToWin, difficulty);
+		let speedIncrement = 0;
+		let paddleHeightDecrement = 0;
+		if(difficulty != "multiplayer") {
+			speedIncrement = this.calculateSpeedIncrement(rounds*pointsToWin, difficulty);
+			paddleHeightDecrement = this.calculatePaddleHeightDecrement(rounds*pointsToWin, difficulty);
+		}
+		console.log("am here : " + speedIncrement);
 		this.rooms.set(
 			roomId,
 			{
@@ -253,12 +267,13 @@ export class GameService {
 	addPlayer(roomId : string, playerId : string, username : string) {
 		const room = this.rooms.get(roomId);
 		if(room){
-			const side = (room.playersNumber == 0) ? PaddleSide.Left : PaddleSide.Right;
+			let side: PaddleSide;
+			side = (room.playersNumber == 0) ? PaddleSide.Left : PaddleSide.Right;
+			console.log("player : " + username +  " side : " + side);
 			const x = (side === PaddleSide.Left) ? VIRTUAL_TABLE_WIDTH/100 : VIRTUAL_TABLE_WIDTH - VIRTUAL_PADDLE_WIDTH - VIRTUAL_TABLE_WIDTH/100;
 			const y = VIRTUAL_TABLE_HEIGHT/2 - (VIRTUAL_PADDLE_HEIGHT/2);
 				room.players.push({playerId : playerId, username : username, side: side, roundScore: 0, x : x, y : y});
 				room.playersNumber++;
-			console.log("side : " + side + " in room id : " + room.roomId);
 			return(side);
 		}
 	}
@@ -268,8 +283,6 @@ export class GameService {
 	}
 
 	// game endpoints methods
-
-
 
 	private players : Player[] = [];
 
@@ -281,7 +294,7 @@ export class GameService {
 		}
 	}
 
-	createPlayer(username : string, id : string, client : Socket) {
+	async createPlayer(username : string, id : string, client : Socket) {
 		const existingPlayers = this.players.filter(player => player.id === id);
 		if(existingPlayers.length === 0) {
 			const player = new Player()
@@ -293,7 +306,7 @@ export class GameService {
 			console.log("player has been created : " + client.id + " username " + username + " id " + id);
 			const matchedPlayers = this.getMatchedPlayers();
 			if(matchedPlayers && matchedPlayers.length === 2) {
-				const gameId = this.createGame(matchedPlayers);
+				const gameId = await this.createGame(matchedPlayers);
 			}
 		}
 		else{
@@ -315,6 +328,16 @@ export class GameService {
 		}
 	}
 
+	isInRoom(clientId : string) {
+		for (const roomState of this.rooms.values()) {
+			const player = roomState.players.find(player => player.playerId === clientId);
+			if (player) {
+			  return roomState.roomId;
+			}
+		}
+		return undefined;
+	}
+
 	removePlayerFromQueue(client : Socket) {
 		this.players = this.players.filter(player => player.id != client.data.payload.id);
 	}
@@ -324,7 +347,7 @@ export class GameService {
 		const game = await this.prisma.game.findUnique({where : {id: id}, select : {
 			status : true,
 		}})
-		if(game?.status === 'pending') {
+		if(game?.status === 'pending' || game?.status === "waiting for another player") {
 			const game = await this.prisma.game.update({where :  {id : id}, data : {
 				playerId2 : user.id,
 				status : 'created'
@@ -347,15 +370,17 @@ export class GameService {
 		}})
 		if(game.rounds && game.pointsToWin) {
 			this.createRoom(game.id, game.rounds, game.pointsToWin, 'multiplayer');
+			const side1 = this.addPlayer("room_" + game.id, matchedPlayers[0].id, matchedPlayers[0].username);
+			const side2 = this.addPlayer("room_"+game.id, matchedPlayers[1].id, matchedPlayers[1].username);
+			this.eventsEmitter.emit("handleMatched", {player1 : matchedPlayers[0], player1Side : side1, player2 : matchedPlayers[1], player2Side : side2, gameId : game.id});
 		}
-		this.eventsEmitter.emit("handleMatched", {player1 : matchedPlayers[0], player2 : matchedPlayers[1], gameId : game.id});
 		return(game.id)
 	}
 
     async postChallengeGame(user: User, body: any) {
 		let game : Game;
 		const difficulty = (body.isFlashy === true) ? "flashy" : "decreasingPaddle"
-		const gameStatus = (body.isPlayerInvited === true) ? "waitingForOtherPlayer" : "pending"
+		const gameStatus = (body.isPlayerInvited === true) ? "waiting for another player" : "pending"
 		game = await this.prisma.game.create({data : {
 			mode : 'challenge',
 			playerId1 : user.id,
@@ -371,7 +396,6 @@ export class GameService {
 
 		if(body.isPlayerInvited)
 		{
-			console.log('inviting')
 			const player = await this.prisma.user.findUnique({where : {username : body.Player}})
 			if(player) {
 				await this.notification.addGameInvite(user.id, player.id, game.id)
@@ -428,9 +452,6 @@ export class GameService {
 					game.player1.avatar = 'http://' + process.env.HOST + ':' + process.env.BPORT + '/api' + game.player1.avatar 
 			}
 		}
-			// return {
-				 
-			// }
 
 		return(pendingGames);
 	}
@@ -500,50 +521,15 @@ export class GameService {
 
 	async updatePlayerXp(playerXp : number, id : string, endGameStatus : string) {
 		let addedXp = (endGameStatus === "winner") ? 100 : (playerXp  < 10) ? 0 : -10;
-		let updatedLevel = Math.log2((playerXp + addedXp) / 100) +1
 		await this.prisma.user.update({
 			where : {id : id}, data : {
 				XP : playerXp + addedXp,
-				level: updatedLevel
 			}
+
 		})
 
 	}
-	async updatePlayerAchievements(winner: string) {
-		const user = await this.prisma.user.findUnique({where: {username: winner },
-			 select:{
-				id: true, 
-				username: true, 
-				badge: true,
-				win: true,
-				XP: true
-			}})
-		if (user){
-			const users = await this.prisma.user.findMany({orderBy: {XP: 'desc'}})
-			let rank = users.findIndex(instance => instance.username === winner) + 1;
-			if(user.badge){
-				if (rank === 1)
-					this.updateSingleAchievement(user.id, "Golden Paddle")
-				else if(rank === 2)
-					this.updateSingleAchievement(user.id, "Sharpshooter")
-				else if(rank === 3)
-					this.updateSingleAchievement(user.id, "Backhand Master")
-				if (user.win === 1)
-					this.updateSingleAchievement(user.id, "Beginner's Luck")
-				if (user.XP >= 1000)
-					this.updateSingleAchievement(user.id, "Worthy Adversary")
-			}
-		}
-	}
-	async updateSingleAchievement(id: string, achievement: string) {
-		await this.prisma.achievement.updateMany({where: {
-			AND: [
-				{userId: id},
-				{Achievement: achievement}
-			]
-		}, data: {Achieved: true}})
-		this.notification.addAchievementNotification(id, achievement)
-	}
+
 	async postGameResult(room : RoomState) {
 		const gameId = room.roomId.slice("room_".length);
 		const id = parseInt(gameId);
@@ -590,10 +576,8 @@ export class GameService {
 						roundScore : rightPlayer.roundScore
 					}
 				}
-				this.updatePlayerXp(players.player1.XP, players.player1.id, (player1.username === winner.username ) ? "winner" : "loser");
-				this.updatePlayerXp(players.player2.XP, players.player2.id, (player2.username === winner.username ) ? "winner" : "loser")
-				this.updatePlayerAchievements(winner.username)
-
+				await this.updatePlayerXp(players.player1.XP, players.player1.id, (player1.username === winner.username ) ? "winner" : "loser");
+				await this.updatePlayerXp(players.player2.XP, players.player2.id, (player2.username === winner.username ) ? "winner" : "loser")
 			} else {
 				await this.prisma.game.update({where : {id : id}, data : {
 					draw : true,
@@ -602,7 +586,7 @@ export class GameService {
 				}});
 				ret = {
 					winner : '',
-					draw : false,
+					draw : true,
 					leftPlayer : {
 						userName :  leftPlayer.username,
 						roundScore : leftPlayer.roundScore
@@ -616,7 +600,6 @@ export class GameService {
 		}	
 		return(ret);
 	}
-	
 }
 
 export interface GameResults{

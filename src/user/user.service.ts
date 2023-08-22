@@ -658,7 +658,7 @@ export class UserService {
         const res = await this.prisma.notification.findMany({
             where: {receiverId: id },
             orderBy: {
-                createdAt: 'asc',
+                createdAt: 'desc',
             },
             select:{
                 id: true,
@@ -677,10 +677,12 @@ export class UserService {
 
             const notifications = res.map((notification) =>{
                 if (notification){
-                    if (notification.sender.avatar)
-                    {
-                        if (!notification.sender.avatar.includes('cdn.intra') && !notification.sender.avatar.includes('https://lh3.googleusercontent.com')){
-                            notification.sender.avatar = 'http://' + process.env.HOST + ':' + process.env.BPORT +  '/api' + notification.sender.avatar
+                    if(notification.sender){
+                        if (notification.sender.avatar)
+                        {
+                            if (!notification.sender.avatar.includes('cdn.intra') && !notification.sender.avatar.includes('https://lh3.googleusercontent.com')){
+                                notification.sender.avatar = 'http://' + process.env.HOST + ':' + process.env.BPORT +  '/api' + notification.sender.avatar
+                            }
                         }
                     }
                 }

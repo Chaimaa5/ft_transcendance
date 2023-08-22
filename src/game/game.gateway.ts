@@ -10,7 +10,7 @@ import { SocketStrategy } from '../auth/jwt/websocket.strategy';
 @WebSocketGateway({
 	namespace:'/game',
 	cors: {
-		origin: ['http://localhost:8000'],
+		origin: ['http://localhost:8080', 'http://10.14.10.6:8080', 'http://10.14.10.6:8000', 'http://10.14.10.6:3000'],
 		methods: ['GET', 'POST'],
 		credentials: true,
 	},
@@ -30,9 +30,11 @@ export class GameGateway implements OnGatewayConnection{
 
 	afterInit(){
 		this.logger.log('game server initialized');
-		this.gameService.eventsEmitter.on('handleMatched', (matches : {player1 : Player, player2 : Player, gameId : number}) => {
-			matches.player1.socket.emit('match', {username : matches.player2.username, gameId : matches.gameId});
-			matches.player2.socket.emit('match', {username : matches.player1.username, gameId : matches.gameId});
+		this.gameService.eventsEmitter.on('handleMatched', (matches : {player1 : Player, player1Side : PaddleSide, player2 : Player, player2Side : PaddleSide, gameId : number}) => {
+			console.log("player 1 : " + matches.player1.username + " is " + matches.player1Side);
+			console.log("player 2  : " + matches.player2.username + " is " + matches.player2Side);
+			matches.player1.socket.emit('match', {username : matches.player2.username, gameId : matches.gameId, side : matches.player1Side});
+			matches.player2.socket.emit('match', {username : matches.player1.username, gameId : matches.gameId, side : matches.player2Side});
 
 		})
 
@@ -47,8 +49,8 @@ export class GameGateway implements OnGatewayConnection{
 			this.server.emit('updateBallPosition', {roomId : ball.roomId, x: ball.x, y: ball.y, speedRatio : ball.speedRatio});
 		})
 
-		this.gameService.eventsEmitter.on('handleEndGame', (payload : {roomId: string, gameResult : GameResults}) => {
-			this.server.emit('endGame', {roomId : payload.roomId, gameResult : payload.gameResult});
+		this.gameService.eventsEmitter.on('handleEndGame', (payload : {roomId: string, gameResults : GameResults}) => {
+			this.server.emit('endGame', {roomId : payload.roomId, gameResult : payload.gameResults});
 		})
 		this.gameService.eventsEmitter.on('startGame', (gameId:number) => {
 			this.server.emit('launchGame',{gameId : gameId})
@@ -84,55 +86,70 @@ export class GameGateway implements OnGatewayConnection{
 
 	@SubscribeMessage("joinQueue")
 	async handleJoinedQueue(client : Socket, payload : {id : number}) {
-		this.gameService.createPlayer(client.data.payload.username, client.data.payload.id, client);
-		client.emit("joinedQueue", {username : client.data.payload.username});
+		await this.gameService.createPlayer(client.data.payload.username, client.data.payload.id, client);
 	}
 	@SubscribeMessage('joinRoom')
-	async handleJoinRoom(client : Socket, payload : {roomId : string}) {
+	async handleJoinRoom(client : Socket, payload : {roomId : string, mode : string, side: PaddleSide}) {
 		console.log("------ roomd id ----------------------------------------------------------------------- " + payload.roomId);
-		const side = this.gameService.addPlayer(payload.roomId, client.id, client.data.payload.username)
-		if(side === PaddleSide.Left)
+		let pSide;
+		if(payload.mode === "multi") {
+			pSide = payload.side;
+		} else {
+			pSide = this.gameService.addPlayer(payload.roomId, client.id, client.data.payload.username);
+		}
+		if(pSide === PaddleSide.Left)
 		{
 			console.log("left");
 			client.join(payload.roomId);
 			this.logger.log("waiting for another player in room " + payload.roomId)
 			this.logger.log("client socket : " + client.id);
-			client.emit('joinedRoom', {roomId : payload.roomId, side : PaddleSide.Left, serverTableWidth: VIRTUAL_TABLE_WIDTH, serverTableHeight : VIRTUAL_TABLE_HEIGHT, userId : client.data.payload.id, username : client.data.payload.username});
+			client.emit('joinedRoom', {roomId : payload.roomId, pSide : PaddleSide.Left, serverTableWidth: VIRTUAL_TABLE_WIDTH, serverTableHeight : VIRTUAL_TABLE_HEIGHT, userId : client.data.payload.id, username : client.data.payload.username});
 		}
-		else {
+		else if(pSide === PaddleSide.Right) {
 			console.log("right");
 			client.join(payload.roomId);
 			this.logger.log("joined an already created game in room " + payload.roomId);
 			this.logger.log("client socket : " + client.id);
-			client.emit('joinedRoom', {roomId : payload.roomId, side : PaddleSide.Right, serverTableWidth: VIRTUAL_TABLE_WIDTH, serverTableHeight : VIRTUAL_TABLE_HEIGHT});
-			const room = this.gameService.roomsMap.get(payload.roomId);
-			if(room && room.playersNumber === 2) {
-				this.logger.log("game is starting now...");
-				this.gameService.startGameLoop(payload.roomId)
-				this.server.emit('startGame', {roomId: payload.roomId, initialBallAngle : this.gameService.randomInitialDirection(), leftPlayerObj :  room.players[0], rightPlayerObj: room.players[1], ballPosX : room.ball.x , ballPosY : room.ball.y, ballSpeedX: room.ball.ballSpeedX, ballSpeedY : room.ball.ballSpeedY, paddleHeight : room.paddleHeight});
-			}
+			client.emit('joinedRoom', {roomId : payload.roomId, pSide : PaddleSide.Right, serverTableWidth: VIRTUAL_TABLE_WIDTH, serverTableHeight : VIRTUAL_TABLE_HEIGHT});
+		}
+		const room = this.gameService.roomsMap.get(payload.roomId);
+		if(room && room.playersNumber === 2) {
+			this.logger.log("game is starting now... ");
+			this.gameService.startGameLoop(payload.roomId)
+			this.server.emit('startGame', {roomId: payload.roomId, initialBallAngle : this.gameService.randomInitialDirection(), leftPlayerObj :  room.players[0], rightPlayerObj: room.players[1], ballPosX : room.ball.x , ballPosY : room.ball.y, ballSpeedX: room.ball.ballSpeedX, ballSpeedY : room.ball.ballSpeedY, paddleHeight : room.paddleHeight});
 		}
 	}
 
 
 	@SubscribeMessage('leaveRoom') 
-	async handleLeaveRoom (client : Socket, payload : {roomId : string, inRoom : boolean}){
-		this.gameService.removePlayerFromQueue(client);
-		if(payload.inRoom === true) {
-			client.leave(payload.roomId);
+	async handleLeaveRoom (client : Socket, payload : {roomId : string, mode : string}){
+		if(payload.mode === 'challenge') {
 			const room = this.gameService.roomsMap.get(payload.roomId);
-			if(room){
+			if(room) {
 				room.playersNumber--;
 				room.isGameEnded = true;
+			await this.gameService.deleteGameById(room.roomId.slice("room_".length));
+			this.server.emit('gameCorrupted', {roomId : room.roomId});
 			}
-			await this.gameService.deleteGameById(payload.roomId.slice("room_".length));
-			this.server.emit('gameCorrupted', {roomId : payload.roomId});
+		}
+		else {
+			this.gameService.removePlayerFromQueue(client);
+			const roomId = this.gameService.isInRoom(client.data.payload.id)
+			if(roomId) {
+				const room = this.gameService.roomsMap.get(roomId);
+				if(room){
+					room.playersNumber--;
+					room.isGameEnded = true;
+				}
+				await this.gameService.deleteGameById(roomId.slice("room_".length));
+				this.server.emit('gameCorrupted', {roomId : roomId});
+			}
 		}
 	}
 
 	@SubscribeMessage('newPaddlePosition')
-	handleNewPaddlePosition(client : Socket, payload : {roomId: string, paddlePosY:number}) : void {
-		this.gameService.updatePaddlePosition(payload.roomId, client.id, payload.paddlePosY);
-		client.to(payload.roomId).emit('updatePaddlePosition', { playerId : client.id ,paddlePosY : payload.paddlePosY});
+	handleNewPaddlePosition(client : Socket, payload : {side : PaddleSide, roomId: string, paddlePosY:number, paddlePosX : number}) : void {
+		this.gameService.updatePaddlePosition(payload.roomId, payload.side, payload.paddlePosY);
+		client.to(payload.roomId).emit('updatePaddlePosition', { roomId : payload.roomId,paddlePosY : payload.paddlePosY});
 	}
 }
