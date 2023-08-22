@@ -38,28 +38,17 @@ export class GameController{
 		return await this.gameService.getChallengeGame(gameId);
 	}
 
-	@Post('/join')
-	joinGame(@Req() Data : Request) {
-		const player = new Player();
-		const user : User = Data.user as User
-		player.id = user.id;
-		player.username = user.username;
-		player.status = 'waiting';
-		this.gameService.createPlayer(player);
+	@Get('/pending-games')
+	async getPendingGames(@Req() Req : Request) {
+		const user : User = Req.user as User;
+		return await this.gameService.getPendingGames(user.id);
 	}
 
-	@Cron('*/3 * * * * *')
-	async matchPlayers() {
-		const matchedPlayers = this.gameService.getMatchedPlayers();
-		if(matchedPlayers && matchedPlayers.length === 2) {
-			const gameId = this.gameService.createGame(matchedPlayers);
-		}
-	}
 
-	@Post('/join-game')
-	async handleJoingGame(@Req() req : Request, @Body() body : any){
+	@Post('/join-game/:id')
+	async handleJoingGame(@Req() req : Request, @Param('id') id : string){
 		const user : User = req.user as User;
-		return await this.gameService.joinGame(user,body);
+		return await this.gameService.joinCreatedGame(user,id);
 	}
 
 	@Post('/training-settings')
@@ -78,11 +67,5 @@ export class GameController{
 	async getTrainingGame(@Param('id') id : string) {
 		const gameId : number = parseInt(id);
 		return await this.gameService.getTrainingGame(gameId);
-	}
-
-	@Get('/endGame/:gameId')
-	async EndGame(@Req() req: Request, @Param('gameId') gameId : number, @Res() res : Response){
-		const user : User = req.user as User;
-		await this.gameService.EndGame(gameId, user.id)
 	}
 }

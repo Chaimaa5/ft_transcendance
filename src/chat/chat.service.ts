@@ -61,7 +61,7 @@ export class ChatService {
     //dm
     async GetJoinedRooms(id : string){
         try{
-
+            let Blocked = await this.getBlocked(id);
             const rooms =  await this.prisma.room.findMany({
                 where: {
                     AND:[
@@ -125,14 +125,16 @@ export class ChatService {
                             message = room.message[number - 1].content;
                     }
                 }
-                return  {
-                    'id': room.id,
-                    'name': room.name,
-                    'type': room.type,
-                    'image': room.image,
-                    'ownerId': room.ownerId,
-                    'userId': userId,
-                    'message': message
+                if(!Blocked.some(user => user.id === userId)){
+                    return  {
+                        'id': room.id,
+                        'name': room.name,
+                        'type': room.type,
+                        'image': room.image,
+                        'ownerId': room.ownerId,
+                        'userId': userId,
+                        'message': message
+                    }
                 }
             }))
             return modifiedRooms
