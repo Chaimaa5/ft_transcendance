@@ -500,15 +500,50 @@ export class GameService {
 
 	async updatePlayerXp(playerXp : number, id : string, endGameStatus : string) {
 		let addedXp = (endGameStatus === "winner") ? 100 : (playerXp  < 10) ? 0 : -10;
+		let updatedLevel = Math.log2((playerXp + addedXp) / 100) +1
 		await this.prisma.user.update({
 			where : {id : id}, data : {
 				XP : playerXp + addedXp,
+				level: updatedLevel
 			}
-
 		})
 
 	}
-
+	async updatePlayerAchievements(winner: string) {
+		const user = await this.prisma.user.findUnique({where: {username: winner },
+			 select:{
+				id: true, 
+				username: true, 
+				badge: true,
+				win: true,
+				XP: true
+			}})
+		if (user){
+			const users = await this.prisma.user.findMany({orderBy: {XP: 'desc'}})
+			let rank = users.findIndex(instance => instance.username === winner) + 1;
+			if(user.badge){
+				if (rank === 1)
+					this.updateSingleAchievement(user.id, "Golden Paddle")
+				else if(rank === 2)
+					this.updateSingleAchievement(user.id, "Sharpshooter")
+				else if(rank === 3)
+					this.updateSingleAchievement(user.id, "Backhand Master")
+				if (user.win === 1)
+					this.updateSingleAchievement(user.id, "Beginner's Luck")
+				if (user.XP >= 1000)
+					this.updateSingleAchievement(user.id, "Worthy Adversary")
+			}
+		}
+	}
+	async updateSingleAchievement(id: string, achievement: string) {
+		await this.prisma.achievement.updateMany({where: {
+			AND: [
+				{userId: id},
+				{Achievement: achievement}
+			]
+		}, data: {Achieved: true}})
+		this.notification.addAchievementNotification(id, achievement)
+	}
 	async postGameResult(room : RoomState) {
 		const gameId = room.roomId.slice("room_".length);
 		const id = parseInt(gameId);
@@ -557,6 +592,8 @@ export class GameService {
 				}
 				this.updatePlayerXp(players.player1.XP, players.player1.id, (player1.username === winner.username ) ? "winner" : "loser");
 				this.updatePlayerXp(players.player2.XP, players.player2.id, (player2.username === winner.username ) ? "winner" : "loser")
+				this.updatePlayerAchievements(winner.username)
+
 			} else {
 				await this.prisma.game.update({where : {id : id}, data : {
 					draw : true,
@@ -579,6 +616,7 @@ export class GameService {
 		}	
 		return(ret);
 	}
+	
 }
 
 export interface GameResults{

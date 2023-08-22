@@ -61,7 +61,6 @@ export class ChatService {
     //dm
     async GetJoinedRooms(id : string){
         try{
-            let Blocked = await this.getBlocked(id);
             const rooms =  await this.prisma.room.findMany({
                 where: {
                     AND:[
@@ -125,7 +124,6 @@ export class ChatService {
                             message = room.message[number - 1].content;
                     }
                 }
-                if(!Blocked.some(user => user.id === userId)){
                     return  {
                         'id': room.id,
                         'name': room.name,
@@ -135,7 +133,6 @@ export class ChatService {
                         'userId': userId,
                         'message': message
                     }
-                }
             }))
             return modifiedRooms
         }catch(e){throw new HttpException('Undefined Parameters', HttpStatus.BAD_REQUEST) }
@@ -145,51 +142,60 @@ export class ChatService {
         try{
             const roomCheck = await this.prisma.room.findFirst({
                 where: {
-                    membership: {
-                        some: {
-                            userId: {
-                                in: [ownerId, memberId]
-                            }
-                        }
-                    },
-                    isChannel: true
-                }
+                    AND: [
+                        {membership: {
+                            some: {
+                              userId: memberId,
+                            },
+                          },},
+                          {membership: {
+                            some: {
+                              userId: ownerId,
+                            },
+                          },},
+                        {isChannel: false}
+                    ]
+                },
+                select: {membership: true}
             })
-            const room = await this.prisma.room.create({
-                data: {
-                    name: name ,
-                    image: '/upload/avatar.png',
-                    type: 'private',
-                    ownerId: ownerId,
-                    isChannel: false,
+            if(!roomCheck){
 
-                }
-            })
-            const member1 = await this.prisma.user.findUnique({where: {id: ownerId}})
-            const member2 = await this.prisma.user.findUnique({where: {id: memberId}})
-            if(member1 && member2){
-                await this.prisma.membership.createMany({
-                    data: [
-                        {
-                            roomId: room.id,
-                            userId: ownerId,
-                            role: 'owner',
-                            isBanned: false,
-                            roomImage: member2.avatar,
-                            roomName: member2.username,
-                            isMuted: false
-                        },
-                        {
-                            roomId: room.id,
-                            userId: memberId,
-                            role: 'owner',
-                            roomImage: member1.avatar,
-                            roomName: member1.username,
-                            isBanned: false,
-                            isMuted: false
-                        }
-                     ]
+                const room = await this.prisma.room.create({
+                    data: {
+                        name: name ,
+                        image: '/upload/avatar.png',
+                        type: 'private',
+                        ownerId: ownerId,
+                        isChannel: false,
+    
+                    }
                 })
+                const member1 = await this.prisma.user.findUnique({where: {id: ownerId}})
+                const member2 = await this.prisma.user.findUnique({where: {id: memberId}})
+                if(member1 && member2){
+                    await this.prisma.membership.createMany({
+                        data: [
+                            {
+                                roomId: room.id,
+                                userId: ownerId,
+                                role: 'owner',
+                                isBanned: false,
+                                roomImage: member2.avatar,
+                                roomName: member2.username,
+                                isMuted: false
+                            },
+                            {
+                                roomId: room.id,
+                                userId: memberId,
+                                role: 'owner',
+                                roomImage: member1.avatar,
+                                roomName: member1.username,
+                                isBanned: false,
+                                isMuted: false
+                            }
+                         ]
+                    })
+                }
             } 
         }catch(e){throw new HttpException('Undefined Parameters', HttpStatus.BAD_REQUEST) }
     }
@@ -1044,8 +1050,6 @@ export class ChatService {
                         }
                     })
                     );
-                    
-                    // console.log(members)
                     return members
         }catch(e){throw new HttpException('Undefined Parameters', HttpStatus.BAD_REQUEST) }
     }

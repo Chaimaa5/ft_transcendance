@@ -25,11 +25,12 @@ export class ProfileService {
                 const friends = await this.CountFriends(username);
                 const user = await this.prisma.user.findUnique({where:{username : username},});
                 const users = await this.prisma.user.findMany({orderBy: {XP: 'desc'}});
+                if(user){
+                    let name = user?.username
+                    rank = users.findIndex(instance => instance.username === name) + 1;
+                }
                 if (user?.id != owner?.id)
-                    if(user){
-                        console.log(users.indexOf(user))
-                            rank = users.indexOf(user) 
-                    }
+
                     isOwner = false;
                     let progress = "";
                     if (user){
@@ -463,7 +464,7 @@ export class ProfileService {
                         }
                         let gameResult = ''
                         if(game.winner){
-                            if(game.winner === id)
+                            if(game.winner === username)
                                 gameResult = 'win'
                             else
                                 gameResult = 'loss'
